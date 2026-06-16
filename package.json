@@ -1,0 +1,40 @@
+{
+  "name": "docusmind",
+  "version": "0.1.0",
+  "description": "DocuMind — config-driven document intelligence orchestrator for legal/document extraction workflows.",
+  "type": "module",
+  "bin": {
+    "docusmind": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js extract",
+    "extract": "node src/cli.js extract",
+    "dry-run": "node src/cli.js dry-run",
+    "config:doctor": "node src/cli.js config:doctor",
+    "prompt:render": "node src/cli.js prompt:render",
+    "test:golden": "node src/test/golden-runner.js",
+    "check": "node --check src/cli.js && node --check src/lib/config.js && node --check src/doc-type-registry.js && node --check src/prompt-builder.js && node --check src/orchestrator.js && node --check src/lib/error-reporter.js && node --check src/lib/json.js && node --check src/lib/llm.js && node --check src/lib/paths.js && node --check src/components/discover-documents.js && node --check src/components/rasterize-first-page.js && node --check src/components/build-universal-prompt.js && node --check src/components/llm-universal-pass.js && node --check src/components/build-specific-prompt.js && node --check src/components/llm-specific-pass.js && node --check src/components/normalize-fields.js && node --check src/components/write-output.js && node --check src/test/golden-runner.js"
+  },
+  "keywords": [
+    "document-intelligence",
+    "ocr",
+    "llm",
+    "ollama",
+    "routerai",
+    "legal-tech",
+    "document-extraction"
+  ],
+  "author": "Alexander Kuzikov",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.84",
+    "fs-extra": "^11.3.3",
+    "jsonc-parser": "^3.3.1",
+    "pdfjs-dist": "^4.10.38",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {}
+}

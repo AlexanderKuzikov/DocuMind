@@ -1,0 +1,45 @@
+{
+  "type": "passport",
+  "name": "Паспорт РФ",
+  "aliases": ["паспорт", "паспорт рф", "passport rf"],
+  "recognitionFeatures": [
+    "разворот паспорта гражданина РФ",
+    "фотография владельца",
+    "серия и номер паспорта",
+    "дата рождения",
+    "код подразделения",
+    "орган выдачи"
+  ],
+  "firstPassFields": [
+    {
+      "id": "series",
+      "label": "Серия",
+      "type": "string",
+      "required": true,
+      "normalization": ["digits-only", "length:4"]
+    },
+    {
+      "id": "number",
+      "label": "Номер",
+      "type": "string",
+      "required": true,
+      "normalization": ["digits-only", "length:6"]
+    },
+    {
+      "id": "birth_date",
+      "label": "Дата рождения",
+      "type": "date",
+      "required": true,
+      "format": "DD.MM.YYYY",
+      "outputFormat": "YYYY-MM-DD"
+    }
+  ],
+  "secondPass": {
+    "mode": "free-legal"
+  },
+  "targetSchema": "passport",
+  "crmNaming": {
+    "template": "passport_{series}{number}_{createdAtDate}_{counter}",
+    "keyFields": ["series", "number"]
+  }
+}

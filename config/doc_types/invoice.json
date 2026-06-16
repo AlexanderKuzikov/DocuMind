@@ -1,0 +1,43 @@
+{
+  "type": "invoice",
+  "name": "Счёт",
+  "aliases": ["счёт", "счет", "инвойс", "invoice"],
+  "recognitionFeatures": [
+    "номер счёта",
+    "дата счёта",
+    "поставщик",
+    "покупатель",
+    "итоговая сумма",
+    "валюта"
+  ],
+  "firstPassFields": [
+    {
+      "id": "invoice_number",
+      "label": "Номер счёта",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "invoice_date",
+      "label": "Дата счёта",
+      "type": "date",
+      "required": true,
+      "format": "DD.MM.YYYY",
+      "outputFormat": "YYYY-MM-DD"
+    },
+    {
+      "id": "supplier_name",
+      "label": "Поставщик",
+      "type": "string",
+      "required": true
+    }
+  ],
+  "secondPass": {
+    "mode": "free-legal"
+  },
+  "targetSchema": "invoice",
+  "crmNaming": {
+    "template": "invoice_{invoice_number}_{createdAtDate}_{counter}",
+    "keyFields": ["invoice_number"]
+  }
+}

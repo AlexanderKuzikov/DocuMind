@@ -1,0 +1,42 @@
+{
+  "type": "marriage_certificate",
+  "name": "Свидетельство о заключении брака",
+  "aliases": ["свидетельство о браке", "свидетельство о заключении брака", "marriage certificate"],
+  "recognitionFeatures": [
+    "запись акта о заключении брака",
+    "ФИО супругов",
+    "дата заключения брака",
+    "орган ЗАГС",
+    "номер актовой записи"
+  ],
+  "firstPassFields": [
+    {
+      "id": "record_number",
+      "label": "Номер актовой записи",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "marriage_date",
+      "label": "Дата заключения брака",
+      "type": "date",
+      "required": true,
+      "format": "DD.MM.YYYY",
+      "outputFormat": "YYYY-MM-DD"
+    },
+    {
+      "id": "husband_surname",
+      "label": "Фамилия супруга",
+      "type": "string",
+      "required": true
+    }
+  ],
+  "secondPass": {
+    "mode": "free-legal"
+  },
+  "targetSchema": "marriage_certificate",
+  "crmNaming": {
+    "template": "marriage_{record_number}_{createdAtDate}_{counter}",
+    "keyFields": ["record_number"]
+  }
+}

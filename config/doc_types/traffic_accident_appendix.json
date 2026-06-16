@@ -1,0 +1,52 @@
+{
+  "type": "traffic_accident_appendix",
+  "name": "Приложение к постановлению об административном правонарушении",
+  "aliases": [
+    "приложение к постановлению",
+    "административное правонарушение",
+    "дтп",
+    "приложение к постановлению об административном правонарушении"
+  ],
+  "recognitionFeatures": [
+    "упоминание административного правонарушения",
+    "номер постановления",
+    "статья КоАП",
+    "дата и время ДТП",
+    "место ДТП",
+    "водители",
+    "транспортные средства",
+    "повреждения",
+    "инспектор",
+    "подразделение ГИБДД"
+  ],
+  "firstPassFields": [
+    {
+      "id": "document_number",
+      "label": "Номер постановления",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": true,
+      "format": "DD.MM.YYYY",
+      "outputFormat": "YYYY-MM-DD"
+    },
+    {
+      "id": "accident_time",
+      "label": "Время ДТП",
+      "type": "time",
+      "required": false
+    }
+  ],
+  "secondPass": {
+    "mode": "free-legal"
+  },
+  "targetSchema": "traffic_accident_appendix",
+  "crmNaming": {
+    "template": "traffic_accident_{document_number}_{createdAtDate}_{counter}",
+    "keyFields": ["document_number"]
+  }
+}
