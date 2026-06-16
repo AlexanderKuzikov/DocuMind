@@ -1,86 +1,388 @@
 # CONTEXT
 
-DocuMind — это проект для извлечения юридически значимых данных из документов с помощью LLM.
+Этот файл предназначен для быстрого погружения новой LLM/агента в проект.
 
-## Цель MVP
+## Проект
 
-Минимальный законченный этап 1:
+DocuMind — Node.js orchestrator для config-driven извлечения юридически значимых данных из документов.
+
+GitHub:
 
 ```text
-input folder
-  ↓
-первый документ / первое изображение / первая страница
-  ↓
-растеризация 200 dpi
-  ↓
-универсальный prompt
-  ↓
-docType + 2-3 базовых поля
-  ↓
-широкий legal extraction prompt в той же сессии
-  ↓
-извлечение всего полезного
-  ↓
-нормализация
-  ↓
-CRM-ready JSON
+https://github.com/AlexanderKuzikov/DocuMind
 ```
 
-## Не цели MVP
+Текущий статус:
 
-На этом этапе не делаем:
+```text
+MVP foundation / demo-ready
+```
 
-- полноценный UI;
-- сложный splitter/segmenter;
-- enhancer/deskew/rotate;
-- матрицу DPI;
-- полноценную plugin-систему;
-- параллельную обработку документов;
-- production evaluator.
+Это уже рабочая основа, но ещё не production-complete система.
 
-## Архитектурные принципы
+## Что уже сделано
 
-1. **Компоненты — отдельными файлами.**
-   Каждый компонент лежит в `src/components/` и подключается через orchestrator.
+На текущем этапе в репозитории есть:
 
-2. **Компоненты не должны напрямую импортировать друг друга.**
-   Они работают через общий `context`.
+- Node.js проект с `package.json` и `package-lock.json`;
+- CLI entrypoint `src/cli.js`;
+- orchestrator `src/orchestrator.js`;
+- компонентная архитектура в `src/components/`;
+- config-driven pipeline через `config/config.jsonc`;
+- типы документов в `config/doc_types/*.json`;
+- prompt templates в `config/prompts/templates/*.md`;
+- LLM client в `src/lib/llm.js`;
+- rasterization первой страницы PDF/изображения;
+- universal pass;
+- wide legal extraction second pass;
+- session-based image policy;
+- базовая нормализация;
+- output writer;
+- debug artifacts;
+- `config:doctor`;
+- `dry-run`;
+- golden runner;
+- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET.
 
-3. **Orchestrator знает порядок pipeline.**
-   Код orchestrator должен оставаться максимально простым.
+Текущий pipeline:
 
-4. **`concurrency: 1`.**
-   Обработка документов строго последовательная.
+```text
+discover-documents
+  ↓
+rasterize-first-page
+  ↓
+build-universal-prompt
+  ↓
+llm-universal-pass
+  ↓
+build-specific-prompt
+  ↓
+llm-specific-pass
+  ↓
+normalize-fields
+  ↓
+write-output
+```
 
-5. **Типы документов не хардкодятся в коде.**
-   Новый тип добавляется одним файлом в `config/doc_types/*.json`.
+## Что планируем делать
 
-6. **JSON стремится к строгости.**
-   Но пока не вводим тяжёлую JSON Schema.
+Ближайшие цели:
 
-7. **LLM-валидация — отдельный слой нормализации.**
-   Пока она нужна для приведения данных к одному виду, а не для усложнения конфига.
+1. Довести MVP до demo-ready состояния.
+2. Добавить реальные golden set fixtures.
+3. Улучшить нормализацию:
+   - ФИО;
+   - адреса;
+   - даты;
+   - суммы;
+   - реквизиты;
+   - номера документов;
+   - VIN;
+   - ОСАГО;
+   - водительские удостоверения.
+4. Улучшить human-readable error reporting.
+5. Проверить session behavior на RouterAI/LM Studio/Ollama.
+6. Уточнить CRM mapping по реальным документам.
+7. Добавить больше doc types через `config/doc_types/*.json`.
+8. Добавить CI/quality gates.
 
-8. **Изображение отправляется один раз, если провайдер держит session.**
-   Второй запрос идёт в той же сессии без повторной отправки картинки.
+## Ключевые договоренности
+
+### 1. Компоненты — отдельными файлами
+
+Это принципиально.
+
+Каждый компонент лежит в:
+
+```text
+src/components/
+```
+
+Компоненты не должны напрямую импортировать друг друга. Они работают через общий `context`.
+
+Оркестратор знает порядок pipeline.
+
+### 2. `concurrency: 1`
+
+Это жёсткое архитектурное правило.
+
+Обработка документов строго последовательная:
+
+```js
+for (const doc of documents) {
+  await processDocument(doc);
+}
+```
+
+Не использовать `Promise.all()` для документов или LLM-запросов.
+
+### 3. Типы документов не хардкодятся в коде
+
+Новый тип документа добавляется одним файлом:
+
+```text
+config/doc_types/<type>.json
+```
+
+Код менять не нужно.
+
+### 4. JSON стремится к строгости
+
+JSON-схемы и тяжёлые валидаторы пока не добавляем.
+
+Пока достаточно:
+
+- аккуратной структуры;
+- `config:doctor`;
+- минимального runtime-check;
+- будущей LLM-валидации новых типов.
+
+### 5. Промпты динамические
+
+Не замораживаем prompt text в коде.
+
+Промпты собираются из:
+
+```text
+config/config.jsonc
+config/doc_types/*.json
+config/prompts/templates/*.md
+```
+
+Но для каждого запуска сохраняем rendered prompts в debug artifacts.
+
+### 6. Изображение отправляется один раз
+
+Текущая договоренность:
+
+```text
+Pass 1: image + universal prompt
+Pass 2: previous result + wide legal extraction prompt
+```
+
+Второй запрос идёт в той же LLM-сессии без повторной отправки картинки.
+
+Конфиг:
+
+```json
+{
+  "llm": {
+    "imagePolicy": "session",
+    "sessionFallback": "each-pass"
+  }
+}
+```
+
+Если провайдер не держит session, fallback — `each-pass`.
+
+### 7. Второй проход — широкий legal extraction
+
+Второй prompt не должен быть узким schema-only запросом.
+
+Цель второго прохода:
+
+```text
+Извлеки все данные, которые могут быть использованы в юридическом рассмотрении этого документа.
+Выведи в виде JSON. Больше ничего не пиши.
+```
+
+Потом `normalize-fields` приводит результат к CRM/legal-схеме.
+
+### 8. Unknown docType — нормальный сценарий
+
+Если первый проход не определил тип:
+
+```text
+unknown
+```
+
+не останавливаемся.
+
+Запускаем generic legal extraction и сохраняем output со статусом `unknown` или `partial`.
+
+### 9. LLM не должна додумывать
+
+В prompt и нормализации важно правило:
+
+```text
+Не выдумывай отсутствующие значения.
+Если значение не найдено или сомнительно — null.
+```
+
+### 10. Ошибки должны быть честными
+
+Пользователь должен видеть:
+
+```text
+что произошло;
+на каком этапе;
+насколько это критично;
+вероятные причины;
+что можно сделать дальше.
+```
+
+Raw stack trace — только в debug/log.
 
 ## Конфигурация
 
-- `config/config.jsonc` — основной конфиг.
-- `config/doc_types/*.json` — типы документов.
-- `config/prompts/templates/*.md` — шаблоны промптов.
+Основной конфиг:
 
-## Текущие профили LLM
+```text
+config/config.jsonc
+```
 
-- `mvp-routerai` — RouterAI, `qwen/qwen3.6-35b-a3b`.
-- `local-lmstudio` — локальная LM Studio/OpenAI-compatible точка.
-- `prod-ollama` — Linux/Ollama, `qwen3.6:35b-a3b`.
+Это JSONC, поэтому комментарии разрешены.
 
-## Точки роста
+Секреты в конфиг не кладём.
 
-- golden set-тестирование;
-- нормализация ФИО, адресов, дат, реквизитов;
-- более точное CRM mapping;
-- fallback на более сильную модель;
-- обработка неизвестных типов;
-- расширенная диагностика ошибок.
+Ключи берём из env:
+
+```env
+ROUTERAI_API_KEY=
+LOCAL_LLM_API_KEY=
+INTERNAL_LLM_API_KEY=
+```
+
+## LLM profiles
+
+Текущие профили:
+
+```text
+mvp-routerai
+local-lmstudio
+prod-ollama
+```
+
+MVP:
+
+```text
+RouterAI.ru
+qwen/qwen3.6-35b-a3b
+```
+
+Production target:
+
+```text
+Linux
+Ollama
+qwen3.6:35b-a3b
+```
+
+Температура:
+
+```text
+0
+```
+
+Thinking — экспериментально, пока отключено.
+
+## DPI
+
+Текущий MVP DPI:
+
+```text
+200
+```
+
+150/300 и разные DPI по типам документов — позже.
+
+## Output
+
+Финальный output должен быть JSON в `output/`.
+
+Ожидаемая структура:
+
+```json
+{
+  "docId": "...",
+  "docType": "...",
+  "docTypeName": "...",
+  "status": "ok | partial | failed | unknown",
+  "source": {},
+  "firstPass": {},
+  "rawExtracted": {},
+  "fields": {},
+  "normalizedFields": {},
+  "validation": {},
+  "crm": {},
+  "createdAt": "..."
+}
+```
+
+## Debug
+
+Debug artifacts сохраняются в:
+
+```text
+debug/<docId>/
+```
+
+Содержимое:
+
+```text
+universal.prompt.md
+universal.response.json
+specific.prompt.md
+specific.response.json
+output.json
+```
+
+Debug можно отключать через `config/config.jsonc`.
+
+## Golden set
+
+Golden set — отдельный тестовый слой.
+
+Структура:
+
+```text
+golden/
+  passport/
+    passport-001/
+      input/
+        document.pdf
+      expected.json
+      config.json
+```
+
+Цель:
+
+```text
+проверять, не деградировал ли результат после изменений prompt/config/model.
+```
+
+Сейчас golden runner есть, но fixtures ещё нужно добавить.
+
+## Команды
+
+```bash
+npm install
+npm run check
+npm run config:doctor
+npm run dry-run
+npm run extract
+npm run prompt:render -- --doc-type passport
+npm run test:golden
+```
+
+## Что не обещаем на текущей стадии
+
+Не обещаем:
+
+- 100% точность;
+- production-complete систему;
+- поддержку всех типов документов;
+- полноценный UI;
+- полноценный CRM mapping;
+- enterprise-grade CI/CD;
+- обработку всех edge cases.
+
+## Стиль работы
+
+- Минимальный scope.
+- Сначала MVP, потом усложнения.
+- Не уходить в overengineering.
+- Честно фиксировать ограничения.
+- Не хардкодить секреты.
+- Не сохранять API keys в конфиге.
+- Не менять архитектурные договоренности без причины.

@@ -1,5 +1,12 @@
 # DocuMind
 
+[![License](https://img.shields.io/github/license/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind/blob/main/LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind/commits/main)
+[![GitHub repo size](https://img.shields.io/github/repo-size/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind)
+[![Node.js >=22](https://img.shields.io/badge/Node.js-%3E%3D22-blue)](https://nodejs.org/)
+[![Pipeline](https://img.shields.io/badge/pipeline-concurrency%3A1-green)](https://github.com/AlexanderKuzikov/DocuMind)
+[![LLM](https://img.shields.io/badge/LLM-RouterAI%20%2F%20Ollama-purple)](https://github.com/AlexanderKuzikov/DocuMind)
+
 DocuMind — Node.js orchestrator для config-driven извлечения данных из документов.
 
 Текущая цель проекта — минимальный законченный workflow:
@@ -15,6 +22,14 @@ input folder
   → нормализация
   → CRM/legal-ready JSON
 ```
+
+## Статус
+
+```text
+MVP foundation / demo-ready, не production-complete
+```
+
+Текущая версия уже умеет собрать pipeline, прогнать документ через LLM и записать JSON, но ещё требует реальных golden set-тестов, доводки нормализации и проверки на документах пользователя.
 
 ## Принципы
 
