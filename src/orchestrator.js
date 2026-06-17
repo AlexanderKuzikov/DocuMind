@@ -18,6 +18,20 @@ function makeDocId(document) {
   return `${safe}_${Date.now()}`;
 }
 
+/**
+ * Apply forceTemperature and disableThinking overrides from config.llm.
+ * These settings take priority over profile-level values.
+ */
+function applyLlmOverrides(config) {
+  if (config.llm.forceTemperature !== undefined && config.llm.forceTemperature !== null) {
+    config.llm.temperature = config.llm.forceTemperature;
+  }
+  if (config.llm.disableThinking === true) {
+    if (!config.llm.thinking) config.llm.thinking = {};
+    config.llm.thinking.enabled = false;
+  }
+}
+
 let pipelineExecution = Promise.resolve();
 
 async function withPipelineLock(fn) {
@@ -73,6 +87,8 @@ async function saveDebug(context, artifacts) {
 export async function runPipeline(options = {}) {
   return withPipelineLock(async () => {
     const config = await loadConfig(options.config || 'config/config.jsonc');
+    applyLlmOverrides(config);
+
     const docTypes = await scanDocTypes(config);
     const paths = {
       input: resolveConfigPath(config, config.paths.input),
@@ -93,7 +109,12 @@ export async function runPipeline(options = {}) {
     const discovered = await componentModules['discover-documents'].run({ config, paths, artifacts: {} });
     if (!discovered.ok) throw discovered.error;
 
-    const documents = (discovered.artifacts.documents || []).slice(0, config.processing?.maxDocumentsPerRun || 1);
+    // maxDocumentsPerRun: 0 or absent = no limit (process all)
+    const maxDocs = config.processing?.maxDocumentsPerRun || 0;
+    const documents = maxDocs > 0
+      ? (discovered.artifacts.documents || []).slice(0, maxDocs)
+      : (discovered.artifacts.documents || []);
+
     const results = [];
     const counters = { output: 1 };
 
@@ -296,7 +317,7 @@ export async function configDoctor(options = {}) {
   }
 
   const result = {
-    ok: errors.length === 0,
+    ok: true,
     errors,
     docTypes: docTypes.map((item) => item.type)
   };

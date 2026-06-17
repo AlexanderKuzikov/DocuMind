@@ -18,8 +18,10 @@
     "format": "webp"
   },
   "processing": {
+    // 0 = no limit, process all documents found (including subfolders).
+    // Set to a positive integer to limit documents per run (useful for testing).
+    "maxDocumentsPerRun": 0,
     "concurrency": 1,
-    "maxDocumentsPerRun": 1,
     "allowParallelDocuments": false,
     "allowParallelLlmCalls": false
   },
@@ -29,6 +31,15 @@
     "activeProfile": "local-lmstudio",
     "imagePolicy": "session",
     "sessionFallback": "each-pass",
+
+    // forceTemperature: overrides temperature for ALL profiles when set.
+    // Set to null to use per-profile temperature values.
+    "forceTemperature": 0,
+
+    // disableThinking: when true, forcibly disables thinking/reasoning mode
+    // regardless of profile or thinking.enabled setting.
+    "disableThinking": true,
+
     "temperature": 0,
     "thinking": {
       "enabled": false,
