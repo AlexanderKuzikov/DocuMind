@@ -143,14 +143,20 @@ export class LlmClient {
       headers.Authorization = `Bearer ${apiKey}`;
     }
 
+    const disableThinking = this.config.llm.disableThinking === true;
+    const thinkingEnabled = !disableThinking && (this.config.llm.thinking?.enabled === true);
+
     const body = {
       model: profile.model,
       messages: session.messages,
       temperature: this.config.llm.temperature ?? profile.temperature ?? 0,
-      stream: profile.stream ?? this.config.llm.stream ?? false
+      stream: profile.stream ?? this.config.llm.stream ?? false,
+      // Qwen3 requires chat_template_kwargs to actually toggle thinking mode.
+      // This works for LM Studio, Ollama, and vLLM with Qwen3 models.
+      chat_template_kwargs: { enable_thinking: thinkingEnabled }
     };
 
-    if (this.config.llm.thinking?.enabled) {
+    if (thinkingEnabled) {
       body.thinking = {
         type: 'enabled',
         budget_tokens: this.config.llm.thinking.budgetTokens ?? 4096
