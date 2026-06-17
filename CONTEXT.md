@@ -659,6 +659,18 @@ relativePath.replace(/^[/\\]+/, '')
 
 Теперь `/style.css` и `/app.js` корректно обслуживаются относительно `ui/`.
 
+### 2026-06-17 — UI module script fix
+
+`ui/app.js` использует top-level `await`.
+
+В обычном `<script src="app.js"></script>` браузер выполняет файл как classic script, и top-level `await` не должен использоваться. Из-за этого UI мог показывать статичную страницу и оставаться на `loading…`.
+
+Исправлено подключение:
+
+```html
+<script type="module" src="app.js"></script>
+```
+
 ### 2026-06-17 — LM Studio local profile
 
 В `config/config.jsonc` установлен активный профиль:

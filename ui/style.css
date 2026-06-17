@@ -96,6 +96,12 @@ header p {
   white-space: nowrap;
 }
 
+.status.error {
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.72);
+}
+
 .tabs {
   position: sticky;
   top: 0;
@@ -214,7 +220,8 @@ input:not([type="checkbox"]) {
 textarea,
 pre {
   width: 100%;
-  min-height: 68vh;
+  min-height: min(62vh, 560px);
+  height: calc(100vh - 300px);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: rgba(2, 6, 23, 0.78);
@@ -388,16 +395,19 @@ aside {
 
 #run-output,
 #file-preview {
-  min-height: 72vh;
+  min-height: min(62vh, 560px);
+  height: calc(100vh - 300px);
 }
 
 #doc-type-editor,
 #prompt-editor {
-  min-height: 72vh;
+  min-height: min(62vh, 560px);
+  height: calc(100vh - 300px);
 }
 
 #config-editor {
-  min-height: 76vh;
+  min-height: min(62vh, 560px);
+  height: calc(100vh - 300px);
 }
 
 @media (max-width: 900px) {

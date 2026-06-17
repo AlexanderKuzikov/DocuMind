@@ -319,9 +319,20 @@ document.addEventListener('change', async (event) => {
 });
 
 state.pipeline = [];
-await loadConfig();
-await loadPipeline();
-await loadDocTypes();
-await loadPrompts();
-showTab('config');
-setStatus('Ready');
+
+async function init() {
+  try {
+    await loadConfig();
+    await loadPipeline();
+    await loadDocTypes();
+    await loadPrompts();
+    showTab('config');
+    setStatus('Ready');
+  } catch (error) {
+    console.error(error);
+    const message = error?.message || String(error);
+    setStatus(`UI не загрузился: ${message}. Проверь, что открыт адрес из npm run ui, а не file://`, true);
+  }
+}
+
+init();
