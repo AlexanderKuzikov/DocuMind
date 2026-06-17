@@ -39,11 +39,13 @@ MVP foundation / demo-ready
 - базовая нормализация;
 - output writer;
 - debug artifacts;
-- `config:doctor`;
+- `config:doctor` с проверкой paths, prompt templates, components, LLM profile и hard rules;
 - `dry-run`;
+- alias lookup для doc types;
 - golden runner;
 - README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET;
-- локальный browser UI через `npm run ui`.
+- локальный browser UI через `npm run ui`;
+- UI save guard: backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback.
 
 Текущий pipeline:
 
@@ -131,6 +133,8 @@ for (const doc of documents) {
 }
 ```
 
+`runPipeline()` и UI `/api/actions/extract` используют lock: если запуск уже идёт, следующий становится в очередь.
+
 Не использовать `Promise.all()` для документов или LLM-запросов.
 
 ### 3. Типы документов не хардкодятся в коде
@@ -140,6 +144,8 @@ for (const doc of documents) {
 ```text
 config/doc_types/<type>.json
 ```
+
+Файл должен описывать `type`, `name`, `aliases`, `recognitionFeatures`, `firstPassFields`, `secondPassFields`, `validationRules`, `secondPass.mode`, `targetSchema`, `crmNaming`.
 
 Код менять не нужно.
 
@@ -165,6 +171,8 @@ config/config.jsonc
 config/doc_types/*.json
 config/prompts/templates/*.md
 ```
+
+`universal.md` получает список доступных типов через `{{allowedDocTypes}}`, поэтому типы документов не нужно хардкодить в prompt template.
 
 Но для каждого запуска сохраняем rendered prompts в debug artifacts.
 
@@ -365,6 +373,8 @@ UI — это локальный dev-инструмент, не production admin
 - добавлять новые компоненты, если они лежат в `src/components/` и экспортируют `meta`;
 - запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
 - смотреть файлы из `output/` и `debug/`.
+
+Перед сохранением конфигов UI делает backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback на ошибку. `/api/actions/extract` использует тот же pipeline lock, что и CLI.
 
 Источник истины для UI — `config/config.jsonc`. UI не должен иметь отдельный хардкодный список компонентов.
 

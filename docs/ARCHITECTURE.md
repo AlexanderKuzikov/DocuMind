@@ -37,7 +37,8 @@ Components do not import each other. They communicate only through the shared `c
 - loading components;
 - running the pipeline in order;
 - creating/closing LLM sessions;
-- writing debug artifacts.
+- writing debug artifacts;
+- enforcing sequential execution with a pipeline lock.
 
 The orchestrator should stay “dumb”: no business logic inside it.
 
@@ -89,6 +90,8 @@ If the provider does not support session retention, fallback should be configure
   }
 }
 ```
+
+The orchestrator owns the shared session when `imagePolicy: "session"`. Individual LLM components can create and close their own short-lived session when no shared session exists.
 
 ## Output
 

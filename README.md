@@ -7,16 +7,18 @@
 [![Pipeline](https://img.shields.io/badge/pipeline-concurrency%3A1-green)](https://github.com/AlexanderKuzikov/DocuMind)
 [![LLM](https://img.shields.io/badge/LLM-RouterAI%20%2F%20Ollama-purple)](https://github.com/AlexanderKuzikov/DocuMind)
 
-DocuMind — Node.js orchestrator для config-driven извлечения данных из документов.
+DocuMind — Node.js orchestrator для config-driven извлечения юридически значимых данных из документов.
 
 Текущая цель проекта — минимальный законченный workflow:
 
 ```text
 input folder
-  → первая страница документа
-  → raster 200 dpi
-  → маленький universal prompt
-  → определение типа документа + 2-3 опорных поля
+  → первый документ
+  → первая страница
+  → raster 150/200 dpi
+  → маленький universal prompt, собранный из `config/doc_types/*.json`
+  → определение типа документа + опорные поля
+  → выбор `config/doc_types/<type>.json`
   → широкий legal extraction prompt в той же LLM-сессии
   → извлечение всех юридически значимых данных
   → нормализация
@@ -29,7 +31,9 @@ input folder
 MVP foundation / demo-ready, не production-complete
 ```
 
-Текущая версия уже умеет собрать pipeline, прогнать документ через LLM и записать JSON, но ещё требует реальных golden set-тестов, доводки нормализации и проверки на документах пользователя.
+Текущая версия уже умеет собрать pipeline, прогнать документ через LLM и записать JSON. Пройдены базовые проверки `npm run check`, `npm run config:doctor`, `npm run dry-run`, `npm run prompt:render -- --doc-type passport` и `npm run test:golden`.
+
+Остаются реальные golden set-тесты, доводка нормализации и проверка на документах пользователя.
 
 ## Принципы
 
@@ -38,6 +42,7 @@ MVP foundation / demo-ready, не production-complete
 - Типы документов описываются в `config/doc_types/*.json`.
 - Промпты собираются автоматически из шаблонов и конфигов типов.
 - Обработка строго последовательная: `concurrency: 1`.
+- Один активный документ и один активный LLM-запрос за раз.
 - Компоненты вынесены в отдельные файлы и подключаются через оркестратор.
 - RouterAI используется для MVP, Ollama/Linux — production target.
 
@@ -101,6 +106,8 @@ config/doc_types/traffic_accident_appendix.json
 - `aliases`;
 - `recognitionFeatures`;
 - `firstPassFields`;
+- `secondPassFields`;
+- `validationRules`;
 - `secondPass.mode`;
 - `targetSchema`;
 - `crmNaming`.
@@ -147,6 +154,8 @@ UI умеет:
 - добавлять новые компоненты, если они экспортируют `meta`;
 - запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
 - смотреть файлы из `output/` и `debug/`.
+
+Перед сохранением конфигов UI делает backup, JSON/JSONC parse, `config:doctor` и prompt preview. Запуск pipeline через UI защищён lock-ом, чтобы не было параллельных документов или LLM-запросов.
 
 В интерфейсе добавлены подсказки: что такое `required`, как работает `enabled`, где хранить production-профиль, как добавлять doc types, как собираются prompts и почему `output/`/`debug/` могут содержать ПДн.
 

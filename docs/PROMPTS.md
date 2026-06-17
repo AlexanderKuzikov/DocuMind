@@ -21,7 +21,8 @@ Purpose:
 ```text
 - determine docType;
 - extract 2-3 anchor fields;
-- keep the prompt small.
+- keep the prompt small;
+- receive allowed doc types from `{{allowedDocTypes}}`.
 ```
 
 ## Specific / legal extraction prompt
@@ -36,6 +37,8 @@ Purpose:
 
 ```text
 - extract everything that may be legally useful;
+- use the already detected doc type;
+- use `secondPassFields` and `validationRules` from `config/doc_types/<type>.json`;
 - return strict JSON;
 - do not add prose.
 ```
