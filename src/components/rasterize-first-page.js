@@ -13,7 +13,7 @@ export const meta = {
   output: ['image']
 };
 
-pdfjs.GlobalWorkerOptions.workerSrc = path.join(projectRoot, 'node_modules/pdfjs-dist/build/pdf.worker.mjs');
+pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/build/pdf.worker.mjs')).href;
 
 class NodeCanvasFactory {
   create(width, height) {
