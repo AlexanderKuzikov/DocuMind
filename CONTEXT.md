@@ -639,6 +639,26 @@ Commit:
 /app.js → app.js
 ```
 
+### 2026-06-17 — UI static path fix
+
+Исправлен баг на Windows/MSYS при запуске UI через `npm run ui`.
+
+Причина:
+
+```text
+safeJoin(resolveFromProject('ui'), url.pathname)
+```
+
+передавал в `path.resolve()` путь вида `/style.css`, и Windows мог интерпретировать его как путь от корня диска, а не относительно папки `ui/`.
+
+Исправление:
+
+```text
+relativePath.replace(/^[/\\]+/, '')
+```
+
+Теперь `/style.css` и `/app.js` корректно обслуживаются относительно `ui/`.
+
 ### 2026-06-17 — LM Studio local profile
 
 В `config/config.jsonc` установлен активный профиль:

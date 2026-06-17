@@ -41,7 +41,8 @@ async function readJsonBody(req) {
 
 function safeJoin(baseDir, relativePath) {
   const base = path.resolve(baseDir);
-  const resolved = path.resolve(base, relativePath);
+  const cleanRelativePath = String(relativePath).replace(/^[/\\]+/, '');
+  const resolved = path.resolve(base, cleanRelativePath);
   if (!resolved.startsWith(`${base}${path.sep}`) && resolved !== base) throw new Error('Path traversal is not allowed');
   return resolved;
 }
