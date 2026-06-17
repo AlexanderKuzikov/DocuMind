@@ -32,34 +32,53 @@ function normalizeContent(content) {
   return '';
 }
 
+/**
+ * Convert image to the payload string expected by image_url.url.
+ *
+ * Encoding modes:
+ *   'data-url'        — full data-URL:  data:image/webp;base64,AAAA...
+ *   'base64-prefixed' — same as data-url (LM Studio / Ollama / most local servers)
+ *   'base64'          — raw base64 only: AAAA...  (some cloud APIs)
+ */
 async function imageToPayload(image, encoding = 'data-url') {
   if (!image) return null;
 
-  if (encoding === 'base64' || encoding === 'base64-prefixed') {
-    if (image.base64) return encoding === 'base64-prefixed' ? `base64,${image.base64}` : image.base64;
+  // Both 'data-url' and 'base64-prefixed' produce a full data-URL.
+  // Local servers (LM Studio, Ollama) require the full data:image/mime;base64,... format.
+  if (encoding === 'data-url' || encoding === 'base64-prefixed') {
+    if (image.dataUrl) return image.dataUrl;
+    let base64;
+    let mime;
+    if (image.path) {
+      mime = mimeFromPath(image.path);
+      const buffer = await fs.readFile(image.path);
+      base64 = buffer.toString('base64');
+    } else if (image.buffer) {
+      mime = image.format || 'webp';
+      base64 = image.buffer.toString('base64');
+    } else if (image.base64) {
+      // already have base64, derive mime from path if available
+      mime = image.path ? mimeFromPath(image.path) : (image.format || 'webp');
+      base64 = image.base64;
+    } else {
+      return null;
+    }
+    return `data:image/${mime};base64,${base64}`;
+  }
+
+  // 'base64' — raw base64 only, for cloud APIs that wrap it themselves
+  if (encoding === 'base64') {
+    if (image.base64) return image.base64;
     if (image.path) {
       const buffer = await fs.readFile(image.path);
-      const base64 = buffer.toString('base64');
-      return encoding === 'base64-prefixed' ? `base64,${base64}` : base64;
+      return buffer.toString('base64');
     }
     if (image.buffer) {
-      const base64 = image.buffer.toString('base64');
-      return encoding === 'base64-prefixed' ? `base64,${base64}` : base64;
+      return image.buffer.toString('base64');
     }
     return null;
   }
 
-  // data-url encoding
-  if (image.dataUrl) return image.dataUrl;
-  if (image.path) {
-    const mime = mimeFromPath(image.path);
-    const buffer = await fs.readFile(image.path);
-    return `data:image/${mime};base64,${buffer.toString('base64')}`;
-  }
-  if (image.buffer) {
-    const mime = image.format || 'webp';
-    return `data:image/${mime};base64,${image.buffer.toString('base64')}`;
-  }
   return null;
 }
 
