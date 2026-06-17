@@ -148,6 +148,8 @@ UI умеет:
 - запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
 - смотреть файлы из `output/` и `debug/`.
 
+В интерфейсе добавлены подсказки: что такое `required`, как работает `enabled`, где хранить production-профиль, как добавлять doc types, как собираются prompts и почему `output/`/`debug/` могут содержать ПДн.
+
 ### Required
 
 `required` означает: если компонент упал, pipeline останавливается. Если `required: false`, ошибка компонента записывается в результат, но pipeline продолжает следующие шаги.

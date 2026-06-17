@@ -622,6 +622,23 @@ Commit:
 
 Чтобы CSS не ломался при `file://`.
 
+### 2026-06-17 — UI hints and instructions
+
+В UI добавлены подсказки на каждой вкладке:
+
+- Config — что редактируется и когда запускать Config Doctor;
+- Pipeline — чем отличаются `enabled` и `required`;
+- Doc Types — как добавлять типы документов;
+- Prompts — как собираются templates + doc type;
+- Run — что безопасен Dry Run и активен local-lmstudio без API key;
+- Files — предупреждение, что output/debug могут содержать ПДн.
+
+Также исправлен относительный путь к `app.js`:
+
+```text
+/app.js → app.js
+```
+
 ### 2026-06-17 — LM Studio local profile
 
 В `config/config.jsonc` установлен активный профиль:

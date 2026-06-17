@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
   <header>
     <div>
       <h1>DocuMind Local Config UI</h1>
-      <p>Local dev tool for config, components, prompts, and pipeline runs.</p>
+      <p>Локальный dev tool для управления pipeline, типами документов, prompt templates и запусками.</p>
     </div>
     <div class="status" id="status">loading…</div>
   </header>
@@ -26,6 +26,10 @@
 
   <main>
     <section id="tab-config" class="tab active">
+      <div class="hint">
+        <b>Config:</b> здесь редактируется <code>config/config.jsonc</code>. Это источник истины для pipeline, LLM-профилей, paths, debug и UI.
+        Сохраняй изменения, затем запускай <b>Config Doctor</b>. Для реальных документов с ПДн production-профиль должен оставаться локальным/on-prem.
+      </div>
       <div class="toolbar">
         <button data-action="load-config">Reload</button>
         <button data-action="save-config">Save</button>
@@ -36,7 +40,8 @@
 
     <section id="tab-pipeline" class="tab">
       <div class="hint">
-        <b>Required</b> means the pipeline stops if this component fails. Optional components can fail and the pipeline continues.
+        <b>Required:</b> если компонент упал, pipeline останавливается. Если <code>required: false</code>, ошибка попадёт в результат, но следующие шаги продолжатся.
+        <br><b>Enabled:</b> компонент вообще участвует в pipeline. <b>Required:</b> — критичность ошибки.
       </div>
       <div class="toolbar">
         <button data-action="load-pipeline">Reload</button>
@@ -46,6 +51,10 @@
     </section>
 
     <section id="tab-doc-types" class="tab">
+      <div class="hint">
+        <b>Doc Types:</b> каждый файл в <code>config/doc_types/*.json</code> описывает один тип документа: aliases, признаки распознавания, поля первого pass и второй legal pass.
+        Новый тип документа добавляется новым JSON-файлом — код менять не нужно.
+      </div>
       <div class="two-col">
         <aside>
           <div class="toolbar">
@@ -64,6 +73,10 @@
     </section>
 
     <section id="tab-prompts" class="tab">
+      <div class="hint">
+        <b>Prompts:</b> здесь редактируются prompt templates. Промпты динамически собираются из templates + выбранного doc type.
+        Для первого pass — универсальное понимание документа. Для второго pass — широкий legal extraction без повторной отправки изображения при `imagePolicy: "session"`.
+      </div>
       <div class="two-col">
         <aside>
           <div class="toolbar">
@@ -82,6 +95,10 @@
     </section>
 
     <section id="tab-run" class="tab">
+      <div class="hint">
+        <b>Run:</b> <code>Dry Run</code> безопасен и не требует входных документов. <code>Extract</code> читает <code>input/</code>, пишет <code>output/</code> и <code>debug/</code>.
+        Сейчас активен <code>local-lmstudio</code>: <code>http://127.0.0.1:1234/v1</code>, API key не нужен.
+      </div>
       <div class="toolbar">
         <button data-action="config-doctor">Config Doctor</button>
         <button data-action="dry-run">Dry Run</button>
@@ -93,6 +110,9 @@
     </section>
 
     <section id="tab-files" class="tab">
+      <div class="hint">
+        <b>Files:</b> здесь можно посмотреть файлы из <code>output/</code> и <code>debug/</code>. Эти папки могут содержать ПДн и реальные документы — не выкладывай их в публичный доступ.
+      </div>
       <div class="toolbar">
         <button data-action="list-output">List output</button>
         <button data-action="list-debug">List debug</button>
@@ -104,6 +124,6 @@
     </section>
   </main>
 
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
