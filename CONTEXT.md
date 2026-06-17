@@ -323,7 +323,7 @@ MVP:
 ```text
 RouterAI.ru
 qwen/qwen3.6-35b-a3b
-imageEncoding: base64
+imageEncoding: base64-prefixed
 ```
 
 Production target:

@@ -244,8 +244,8 @@ export async function configDoctor(options = {}) {
     errors.push(`Unknown LLM activeProfile: ${config.llm?.activeProfile}`);
   }
   for (const [profileName, profile] of Object.entries(config.llm?.profiles || {})) {
-    if (profile.imageEncoding && !['data-url', 'base64'].includes(profile.imageEncoding)) {
-      errors.push(`llm.profiles.${profileName}.imageEncoding must be "data-url" or "base64"`);
+    if (profile.imageEncoding && !['data-url', 'base64', 'base64-prefixed'].includes(profile.imageEncoding)) {
+      errors.push(`llm.profiles.${profileName}.imageEncoding must be "data-url", "base64", or "base64-prefixed"`);
     }
   }
 

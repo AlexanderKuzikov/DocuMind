@@ -5,13 +5,17 @@ import { parseJsonLenient } from './json.js';
 async function imageToPayload(image, encoding = 'data-url') {
   if (!image) return null;
 
-  if (encoding === 'base64') {
-    if (image.base64) return image.base64;
+  if (encoding === 'base64' || encoding === 'base64-prefixed') {
+    if (image.base64) return encoding === 'base64-prefixed' ? `base64,${image.base64}` : image.base64;
     if (image.path) {
       const buffer = await fs.readFile(image.path);
-      return buffer.toString('base64');
+      const base64 = buffer.toString('base64');
+      return encoding === 'base64-prefixed' ? `base64,${base64}` : base64;
     }
-    if (image.buffer) return image.buffer.toString('base64');
+    if (image.buffer) {
+      const base64 = image.buffer.toString('base64');
+      return encoding === 'base64-prefixed' ? `base64,${base64}` : base64;
+    }
     return null;
   }
 
