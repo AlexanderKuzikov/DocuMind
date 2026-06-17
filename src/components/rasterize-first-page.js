@@ -3,7 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import sharp from 'sharp';
-import { createCanvas, Image } from '@napi-rs/canvas';
+import { createCanvas, Image, Path2D, DOMMatrix } from '@napi-rs/canvas';
 import { projectRoot } from '../lib/paths.js';
 
 export const meta = {
@@ -14,6 +14,8 @@ export const meta = {
 };
 
 pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
+globalThis.Path2D = Path2D;
+globalThis.DOMMatrix = DOMMatrix;
 
 class NodeCanvasFactory {
   create(width, height) {
