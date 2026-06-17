@@ -441,7 +441,7 @@ npm run test:golden
 - 100% точность;
 - production-complete систему;
 - поддержку всех типов документов;
-- полноценный UI;
+- полноценный production UI;
 - полноценный CRM mapping;
 - enterprise-grade CI/CD;
 - обработку всех edge cases.
@@ -455,3 +455,152 @@ npm run test:golden
 - Не хардкодить секреты.
 - Не сохранять API keys в конфиге.
 - Не менять архитектурные договоренности без причины.
+
+## Дневник разработки
+
+### 2026-06-17 — MVP foundation
+
+Создан базовый Node.js проект:
+
+- `package.json`;
+- `package-lock.json`;
+- `src/cli.js`;
+- `src/orchestrator.js`;
+- `src/components/`;
+- `src/lib/`;
+- `config/config.jsonc`;
+- `config/doc_types/*.json`;
+- `config/prompts/templates/*.md`;
+- `src/test/golden-runner.js`;
+- `README.md`;
+- `CONTEXT.md`;
+- `docs/ARCHITECTURE.md`;
+- `docs/PROMPTS.md`;
+- `docs/GOLDEN_SET.md`.
+
+Добавлен минимальный pipeline:
+
+```text
+discover-documents
+rasterize-first-page
+build-universal-prompt
+llm-universal-pass
+build-specific-prompt
+llm-specific-pass
+normalize-fields
+write-output
+```
+
+Commit:
+
+```text
+456c0b4 — Add DocuMind MVP orchestrator and project scaffolding
+```
+
+### 2026-06-17 — CONTEXT как onboarding для LLM
+
+`CONTEXT.md` переписан как файл быстрого погружения новой LLM/агента в проект.
+
+Добавлены:
+
+- цель проекта;
+- что уже сделано;
+- что планируем делать;
+- ключевые архитектурные договоренности;
+- `concurrency: 1`;
+- component-based pipeline;
+- dynamic prompts;
+- session-based image policy;
+- free legal extraction second pass;
+- unknown docType handling;
+- data policy для ПДн;
+- config/profiles;
+- output/debug/golden set;
+- ограничения текущей стадии.
+
+Commit:
+
+```text
+3695292 — Improve README badges and CONTEXT onboarding
+```
+
+### 2026-06-17 — Local browser config UI
+
+Добавлен локальный browser UI:
+
+- `src/ui-server.js`;
+- `ui/index.html`;
+- `ui/app.js`;
+- `ui/style.css`;
+- `npm run ui`.
+
+UI стартует на:
+
+```text
+http://127.0.0.1:4173
+```
+
+Порт `3000` специально не используется. Если `4173` занят, сервер перебирает `4174–4183`.
+
+UI умеет:
+
+- редактировать `config/config.jsonc`;
+- редактировать `config/doc_types/*.json`;
+- редактировать prompt templates;
+- сканировать `src/components/*.js`;
+- читать `meta` компонентов;
+- включать/выключать компоненты;
+- менять `required`;
+- менять порядок pipeline;
+- удалять компонент из pipeline;
+- добавлять новые компоненты, если они экспортируют `meta`;
+- запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
+- смотреть файлы из `output/` и `debug/`.
+
+`required` зафиксирован как:
+
+```text
+если компонент упал, pipeline останавливается
+```
+
+`required: false` означает:
+
+```text
+ошибка сохраняется в результат, но pipeline продолжает следующие шаги
+```
+
+Commit:
+
+```text
+0999f19 — Add local browser config UI
+```
+
+### 2026-06-17 — Production data policy
+
+Зафиксировано правило:
+
+```text
+реальные юридические документы с персональными данными не отправляются во внешние LLM-сервисы
+```
+
+Cloud-профили, включая RouterAI, разрешены только для:
+
+```text
+dev
+sandbox
+синтетических документов
+обезличенных fixtures
+```
+
+Production-режим должен работать локально/on-prem через Ollama.
+
+### Текущий open next step
+
+Следующий полезный шаг:
+
+```text
+взять 3 вида документов по 6–10 примеров
+создать первые golden fixtures
+прогнать pipeline
+уточнить prompts/doc_types/normalization
+```
