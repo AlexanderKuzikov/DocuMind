@@ -44,7 +44,8 @@ MVP foundation / demo-ready, не production-complete
 - Обработка строго последовательная: `concurrency: 1`.
 - Один активный документ и один активный LLM-запрос за раз.
 - Компоненты вынесены в отдельные файлы и подключаются через оркестратор.
-- RouterAI используется для MVP, Ollama/Linux — production target.
+- `mvp-routerai` uses RouterAI and sends images as raw base64 because RouterAI rejects OpenAI-style `data:` image URLs;
+- `local-lmstudio` and `prod-ollama` use the default OpenAI-compatible `data-url` format;
 
 ## Быстрый старт
 

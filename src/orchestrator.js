@@ -243,6 +243,11 @@ export async function configDoctor(options = {}) {
   if (!activeProfile) {
     errors.push(`Unknown LLM activeProfile: ${config.llm?.activeProfile}`);
   }
+  for (const [profileName, profile] of Object.entries(config.llm?.profiles || {})) {
+    if (profile.imageEncoding && !['data-url', 'base64'].includes(profile.imageEncoding)) {
+      errors.push(`llm.profiles.${profileName}.imageEncoding must be "data-url" or "base64"`);
+    }
+  }
 
   if (config.processing?.allowParallelDocuments !== false) {
     errors.push('processing.allowParallelDocuments must be false');

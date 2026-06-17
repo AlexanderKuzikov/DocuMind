@@ -39,6 +39,7 @@
         "baseUrl": "https://routerai.ru/v1",
         "model": "qwen/qwen3.6-35b-a3b",
         "apiKeyEnv": "ROUTERAI_API_KEY",
+        "imageEncoding": "base64",
         "timeout": 180000,
         "stream": false
       },

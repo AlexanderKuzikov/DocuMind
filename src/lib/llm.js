@@ -2,8 +2,19 @@ import fs from 'node:fs/promises';
 import { getEnvValue } from './config.js';
 import { parseJsonLenient } from './json.js';
 
-async function imageToDataUrl(image) {
+async function imageToPayload(image, encoding = 'data-url') {
   if (!image) return null;
+
+  if (encoding === 'base64') {
+    if (image.base64) return image.base64;
+    if (image.path) {
+      const buffer = await fs.readFile(image.path);
+      return buffer.toString('base64');
+    }
+    if (image.buffer) return image.buffer.toString('base64');
+    return null;
+  }
+
   if (image.dataUrl) return image.dataUrl;
   if (image.path) {
     const ext = image.path.toLowerCase().endsWith('.png') ? 'png' : 'webp';
@@ -47,9 +58,9 @@ export class LlmClient {
 
     const content = [];
     if (image) {
-      const dataUrl = await imageToDataUrl(image);
-      if (dataUrl) {
-        content.push({ type: 'image_url', image_url: { url: dataUrl } });
+      const imagePayload = await imageToPayload(image, profile.imageEncoding);
+      if (imagePayload) {
+        content.push({ type: 'image_url', image_url: { url: imagePayload } });
       }
     }
     content.push({ type: 'text', text: prompt });
