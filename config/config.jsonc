@@ -40,6 +40,7 @@
         "model": "qwen/qwen3.6-35b-a3b",
         "apiKeyEnv": "ROUTERAI_API_KEY",
         "imageEncoding": "base64-prefixed",
+        "lmStudioCompat": false,
         "timeout": 180000,
         "stream": false
       },
@@ -47,8 +48,11 @@
         "baseUrl": "http://127.0.0.1:1234/v1",
         "model": "qwen3.6:35b-a3b",
         "apiKeyEnv": null,
-        // LM Studio rejects data-url format; use base64-prefixed
         "imageEncoding": "base64-prefixed",
+        // LM Studio bug lmstudio-bug-tracker#1752:
+        // rejects data:image/webp;base64,... but accepts data:image/png;base64,...
+        // lmStudioCompat forces mime='png' in data-URL header as a workaround.
+        "lmStudioCompat": true,
         "timeout": 300000,
         "stream": false
       },
@@ -56,8 +60,8 @@
         "baseUrl": "http://127.0.0.1:11434/v1",
         "model": "qwen3.6:35b-a3b",
         "apiKeyEnv": null,
-        // Ollama OpenAI-compatible server; base64-prefixed for consistency with LM Studio
         "imageEncoding": "base64-prefixed",
+        "lmStudioCompat": false,
         "timeout": 300000,
         "stream": false
       }

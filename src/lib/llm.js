@@ -36,33 +36,43 @@ function normalizeContent(content) {
  * Convert image to the payload string expected by image_url.url.
  *
  * Encoding modes:
- *   'data-url'        — full data-URL:  data:image/webp;base64,AAAA...
- *   'base64-prefixed' — same as data-url (LM Studio / Ollama / most local servers)
+ *   'data-url'        — full data-URL: data:image/webp;base64,AAAA...
+ *   'base64-prefixed' — same as data-url
  *   'base64'          — raw base64 only: AAAA...  (some cloud APIs)
+ *
+ * lmStudioCompat: true — forces mime to 'png' in the data-URL header.
+ *   LM Studio has a confirmed bug (lmstudio-bug-tracker#1752) where it
+ *   rejects data:image/webp;base64,... but accepts data:image/png;base64,...
+ *   even when the actual bytes are webp/jpeg.
  */
-async function imageToPayload(image, encoding = 'data-url') {
+async function imageToPayload(image, encoding = 'data-url', lmStudioCompat = false) {
   if (!image) return null;
 
-  // Both 'data-url' and 'base64-prefixed' produce a full data-URL.
-  // Local servers (LM Studio, Ollama) require the full data:image/mime;base64,... format.
   if (encoding === 'data-url' || encoding === 'base64-prefixed') {
-    if (image.dataUrl) return image.dataUrl;
+    if (image.dataUrl) {
+      if (lmStudioCompat) {
+        return image.dataUrl.replace(/^data:image\/[^;]+;/, 'data:image/png;');
+      }
+      return image.dataUrl;
+    }
+
     let base64;
     let mime;
+
     if (image.path) {
-      mime = mimeFromPath(image.path);
+      mime = lmStudioCompat ? 'png' : mimeFromPath(image.path);
       const buffer = await fs.readFile(image.path);
       base64 = buffer.toString('base64');
     } else if (image.buffer) {
-      mime = image.format || 'webp';
+      mime = lmStudioCompat ? 'png' : (image.format || 'webp');
       base64 = image.buffer.toString('base64');
     } else if (image.base64) {
-      // already have base64, derive mime from path if available
-      mime = image.path ? mimeFromPath(image.path) : (image.format || 'webp');
+      mime = lmStudioCompat ? 'png' : (image.path ? mimeFromPath(image.path) : (image.format || 'webp'));
       base64 = image.base64;
     } else {
       return null;
     }
+
     return `data:image/${mime};base64,${base64}`;
   }
 
@@ -114,7 +124,11 @@ export class LlmClient {
     const content = [];
     content.push({ type: 'text', text: prompt });
     if (image) {
-      const imagePayload = await imageToPayload(image, profile.imageEncoding);
+      const imagePayload = await imageToPayload(
+        image,
+        profile.imageEncoding,
+        profile.lmStudioCompat === true
+      );
       if (imagePayload) {
         content.push({ type: 'image_url', image_url: { url: imagePayload } });
       }
