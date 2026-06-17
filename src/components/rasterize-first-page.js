@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import * as pdfjs from 'pdfjs-dist';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import sharp from 'sharp';
 import { createCanvas, Image } from '@napi-rs/canvas';
 import { projectRoot } from '../lib/paths.js';
@@ -13,7 +13,7 @@ export const meta = {
   output: ['image']
 };
 
-pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/build/pdf.worker.mjs')).href;
+pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
 
 class NodeCanvasFactory {
   create(width, height) {
