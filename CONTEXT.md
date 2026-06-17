@@ -575,6 +575,30 @@ Commit:
 0999f19 — Add local browser config UI
 ```
 
+### 2026-06-17 — UI styling pass
+
+Обновлен `ui/style.css` и исправлен относительный путь к CSS в `ui/index.html`.
+
+Визуальный стиль UI:
+
+- dark dashboard theme;
+- аккуратный header;
+- sticky tabs;
+- pill buttons;
+- карточки компонентов;
+- better focus/hover states;
+- responsive layout;
+- subtle grid background;
+- `prefers-reduced-motion` support.
+
+Для локального открытия файла исправлено:
+
+```text
+/style.css → style.css
+```
+
+Чтобы CSS не ломался при `file://`.
+
 ### 2026-06-17 — Production data policy
 
 Зафиксировано правило:
