@@ -1,6 +1,36 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { getEnvValue } from './config.js';
 import { parseJsonLenient } from './json.js';
+
+const MIME_MAP = {
+  '.png': 'png',
+  '.jpg': 'jpeg',
+  '.jpeg': 'jpeg',
+  '.webp': 'webp',
+  '.gif': 'gif',
+  '.bmp': 'bmp',
+};
+
+function mimeFromPath(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return MIME_MAP[ext] || 'webp';
+}
+
+function normalizeContent(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part.text === 'string') return part.text;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+  return '';
+}
 
 async function imageToPayload(image, encoding = 'data-url') {
   if (!image) return null;
@@ -19,15 +49,16 @@ async function imageToPayload(image, encoding = 'data-url') {
     return null;
   }
 
+  // data-url encoding
   if (image.dataUrl) return image.dataUrl;
   if (image.path) {
-    const ext = image.path.toLowerCase().endsWith('.png') ? 'png' : 'webp';
+    const mime = mimeFromPath(image.path);
     const buffer = await fs.readFile(image.path);
-    return `data:image/${ext};base64,${buffer.toString('base64')}`;
+    return `data:image/${mime};base64,${buffer.toString('base64')}`;
   }
   if (image.buffer) {
-    const ext = image.format || 'webp';
-    return `data:image/${ext};base64,${image.buffer.toString('base64')}`;
+    const mime = image.format || 'webp';
+    return `data:image/${mime};base64,${image.buffer.toString('base64')}`;
   }
   return null;
 }
@@ -60,14 +91,15 @@ export class LlmClient {
       throw new Error(`Missing API key env variable: ${profile.apiKeyEnv}`);
     }
 
+    // text first, image second — required by some local LLM servers (LM Studio, Qwen)
     const content = [];
+    content.push({ type: 'text', text: prompt });
     if (image) {
       const imagePayload = await imageToPayload(image, profile.imageEncoding);
       if (imagePayload) {
         content.push({ type: 'image_url', image_url: { url: imagePayload } });
       }
     }
-    content.push({ type: 'text', text: prompt });
 
     session.messages.push({ role: 'user', content });
 
@@ -92,8 +124,9 @@ export class LlmClient {
       };
     }
 
+    const timeoutMs = profile.timeout || this.config.llm.timeout || 180000;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), profile.timeout || this.config.llm.timeout || 180000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     let response;
     try {
@@ -103,17 +136,26 @@ export class LlmClient {
         body: JSON.stringify(body),
         signal: controller.signal
       });
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
+
+    if (!response.ok) {
+      clearTimeout(timeout);
+      const text = await response.text().catch(() => '');
+      throw new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
+    }
+
+    let json;
+    try {
+      json = await response.json();
     } finally {
       clearTimeout(timeout);
     }
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
-    }
-
-    const json = await response.json();
-    const contentText = json.choices?.[0]?.message?.content;
+    const rawContent = json.choices?.[0]?.message?.content;
+    const contentText = normalizeContent(rawContent);
     if (!contentText) {
       throw new Error('LLM response has no message content');
     }
@@ -134,5 +176,7 @@ export function shouldSendImage(config, passName) {
   const policy = config.llm.imagePolicy || 'session';
   if (policy === 'each-pass') return true;
   if (policy === 'first-pass-only') return passName === 'universal';
+  if (policy === 'session') return passName === 'universal';
+  console.warn(`[llm] Unknown imagePolicy: "${policy}", falling back to session behavior`);
   return passName === 'universal';
 }

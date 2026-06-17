@@ -63,7 +63,6 @@ function collectFields(raw, target = {}) {
     } else {
       target[key] = value;
     }
-    target[key] = value;
   }
   return target;
 }

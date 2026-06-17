@@ -12,6 +12,8 @@ export const meta = {
   output: ['image']
 };
 
+const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.tif']);
+
 let pdfjsPromise;
 
 function ensureCanvasGlobals() {
@@ -53,6 +55,9 @@ async function rasterizePdfFirstPage(filePath, stagingDir, dpi, format) {
     throw new Error('PDF has no pages');
   }
 
+  // save before cleanup — numPages may be unavailable after cleanup
+  const numPages = pdfDocument.numPages;
+
   const page = await pdfDocument.getPage(1);
   const viewport = page.getViewport({ scale: dpi / 72 });
   const canvas = createCanvas(viewport.width, viewport.height);
@@ -80,7 +85,7 @@ async function rasterizePdfFirstPage(filePath, stagingDir, dpi, format) {
     dpi,
     width: viewport.width,
     height: viewport.height,
-    pages: pdfDocument.numPages
+    pages: numPages
   };
 }
 
@@ -110,7 +115,7 @@ async function copyImageFirstPage(filePath, stagingDir, format) {
 
 export async function run(context) {
   const document = context.document || context.artifacts.document;
-  const docId = context.document.id;
+  const docId = document.id;
   const stagingDir = path.join(context.paths.staging, docId);
   const ext = path.extname(document.path).toLowerCase();
   const format = context.config.rasterize.format || 'webp';
@@ -119,8 +124,19 @@ export async function run(context) {
   let image;
   if (ext === '.pdf') {
     image = await rasterizePdfFirstPage(document.path, stagingDir, dpi, format);
-  } else {
+  } else if (SUPPORTED_IMAGE_EXTENSIONS.has(ext)) {
     image = await copyImageFirstPage(document.path, stagingDir, format);
+  } else {
+    return {
+      ok: false,
+      error: {
+        code: 'UNSUPPORTED_FORMAT',
+        message: `Unsupported file format: ${ext || '(no extension)'}. Supported: .pdf, ${[...SUPPORTED_IMAGE_EXTENSIONS].join(', ')}`,
+        stage: meta.id,
+        recoverable: false,
+        suggestions: ['convert document to PDF or JPEG/PNG before processing']
+      }
+    };
   }
 
   await fs.mkdir(stagingDir, { recursive: true });
