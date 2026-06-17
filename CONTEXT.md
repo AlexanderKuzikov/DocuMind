@@ -279,7 +279,30 @@ INTERNAL_LLM_API_KEY=
 
 ## LLM profiles
 
-Текущие профили:
+Текущий активный профиль для экспериментов:
+
+```json
+{
+  "activeProfile": "local-lmstudio"
+}
+```
+
+LM Studio profile:
+
+```json
+{
+  "baseUrl": "http://127.0.0.1:1234/v1",
+  "model": "qwen3.6:35b-a3b",
+  "apiKeyEnv": null,
+  "timeout": 300000
+}
+```
+
+LM Studio в OpenAI-compatible режиме не требует API key.
+
+Если LM Studio отдаёт другое имя модели, его надо поменять в `config/config.jsonc` в поле `llm.profiles["local-lmstudio"].model`.
+
+RouterAI:
 
 ```text
 mvp-routerai
@@ -598,6 +621,24 @@ Commit:
 ```
 
 Чтобы CSS не ломался при `file://`.
+
+### 2026-06-17 — LM Studio local profile
+
+В `config/config.jsonc` установлен активный профиль:
+
+```text
+local-lmstudio
+```
+
+Настройки:
+
+```text
+baseUrl: http://127.0.0.1:1234/v1
+model: qwen3.6:35b-a3b
+apiKeyEnv: null
+```
+
+`LOCAL_LLM_API_KEY` убран из `.env.example`, потому что LM Studio OpenAI-compatible server не требует API key.
 
 ### 2026-06-17 — Production data policy
 

@@ -71,9 +71,19 @@ config/config.jsonc
 
 ```env
 ROUTERAI_API_KEY=
-LOCAL_LLM_API_KEY=
 INTERNAL_LLM_API_KEY=
 ```
+
+Текущий активный профиль — локальная LM Studio:
+
+```text
+local-lmstudio
+baseUrl: http://127.0.0.1:1234/v1
+model: qwen3.6:35b-a3b
+apiKeyEnv: null
+```
+
+LM Studio в OpenAI-compatible режиме не требует API key.
 
 Типы документов добавляются одним файлом:
 
