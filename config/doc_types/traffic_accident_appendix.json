@@ -41,6 +41,61 @@
       "required": false
     }
   ],
+  "secondPassFields": [
+    {
+      "id": "article",
+      "label": "Статья КоАП",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "violation_code",
+      "label": "Код нарушения",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "drivers",
+      "label": "Водители",
+      "type": "array",
+      "required": true
+    },
+    {
+      "id": "vehicles",
+      "label": "Транспортные средства",
+      "type": "array",
+      "required": true
+    },
+    {
+      "id": "damage",
+      "label": "Повреждения",
+      "type": "array",
+      "required": false
+    },
+    {
+      "id": "inspector",
+      "label": "Инспектор",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "traffic_police_unit",
+      "label": "Подразделение ГИБДД",
+      "type": "string",
+      "required": false
+    }
+  ],
+  "validationRules": [
+    "article не должен быть пустым",
+    "accident_date должен быть корректной датой в формате YYYY-MM-DD",
+    "drivers и vehicles, если указаны, должны быть массивами"
+  ],
   "secondPass": {
     "mode": "free-legal"
   },

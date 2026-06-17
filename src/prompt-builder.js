@@ -3,7 +3,7 @@ import { resolveConfigPath } from './lib/config.js';
 
 function render(template, values) {
   return Object.entries(values).reduce((text, [key, value]) => {
-    return text.replaceAll(`{{${key}}}`, value);
+    return text.replaceAll(`{{${key}}}`, String(value));
   }, template);
 }
 
@@ -11,6 +11,11 @@ function formatField(field) {
   const required = field.required ? 'required' : 'optional';
   const validation = field.validation ? `, validation=${field.validation}` : '';
   return `- ${field.id} — ${field.label}, ${field.type}, ${required}${validation}`;
+}
+
+function formatValidationRule(rule) {
+  if (typeof rule === 'string') return `- ${rule}`;
+  return `- ${rule.id || rule.field || 'rule'}: ${rule.message || rule.description || JSON.stringify(rule)}`;
 }
 
 export async function readTemplate(config, name) {
@@ -45,12 +50,33 @@ export function buildFirstPassFields(docTypes) {
     .join('\n\n');
 }
 
+export function buildSecondPassFields(docTypes) {
+  return docTypes
+    .map((docType) => {
+      const fields = (docType.secondPassFields || []).map(formatField).join('\n');
+      return `${docType.type}:\n${fields || '— не заданы'}`;
+    })
+    .join('\n\n');
+}
+
+export function buildValidationRules(docTypes) {
+  return docTypes
+    .map((docType) => {
+      const rules = Array.isArray(docType.validationRules)
+        ? docType.validationRules.map(formatValidationRule).join('\n')
+        : `— не заданы`;
+      return `${docType.type}:\n${rules}`;
+    })
+    .join('\n\n');
+}
+
 export async function buildUniversalPrompt(config, docTypes) {
   const template = await readTemplate(config, 'universal');
   return render(template, {
     typesList: buildTypesList(docTypes),
     recognitionFeatures: buildRecognitionFeatures(docTypes),
-    firstPassFields: buildFirstPassFields(docTypes)
+    firstPassFields: buildFirstPassFields(docTypes),
+    allowedDocTypes: docTypes.map((docType) => docType.type).concat(['unknown']).join(' | ')
   });
 }
 
@@ -59,7 +85,9 @@ export async function buildSpecificPrompt(config, docType, previousResult) {
   return render(template, {
     docType: docType.type,
     docTypeName: docType.name,
-    previousResult: JSON.stringify(previousResult, null, 2)
+    previousResult: JSON.stringify(previousResult, null, 2),
+    secondPassFields: buildSecondPassFields([docType]),
+    validationRules: buildValidationRules([docType])
   });
 }
 

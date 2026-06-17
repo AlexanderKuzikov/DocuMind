@@ -5,15 +5,25 @@ function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg.startsWith('--')) {
-      const key = arg.slice(2);
-      const next = argv[i + 1];
-      if (!next || next.startsWith('--')) {
-        args[key] = true;
-      } else {
-        args[key] = next;
-        i += 1;
-      }
+    if (arg === '--') continue;
+    if (!arg.startsWith('--')) continue;
+
+    const withoutDashes = arg.slice(2);
+    const eqIndex = withoutDashes.indexOf('=');
+    const rawKey = eqIndex === -1 ? withoutDashes : withoutDashes.slice(0, eqIndex);
+    const key = rawKey.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+    if (eqIndex !== -1) {
+      args[key] = withoutDashes.slice(eqIndex + 1);
+      continue;
+    }
+
+    const next = argv[i + 1];
+    if (!next || next.startsWith('--')) {
+      args[key] = true;
+    } else {
+      args[key] = next;
+      i += 1;
     }
   }
   return args;

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadConfig, resolveConfigPath } from './lib/config.js';
-import { scanDocTypes } from './doc-type-registry.js';
+import { scanDocTypes, findDocType } from './doc-type-registry.js';
 import { LlmClient } from './lib/llm.js';
 import { statusFromErrors } from './lib/error-reporter.js';
 import { projectRoot } from './lib/paths.js';
@@ -16,6 +16,23 @@ function makeDocId(document) {
   const base = path.basename(document.name, path.extname(document.name));
   const safe = base.normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '').toLowerCase() || 'document';
   return `${safe}_${Date.now()}`;
+}
+
+let pipelineExecution = Promise.resolve();
+
+async function withPipelineLock(fn) {
+  const previous = pipelineExecution;
+  let release;
+  pipelineExecution = new Promise((resolve) => {
+    release = resolve;
+  });
+
+  await previous.catch(() => {});
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
 }
 
 async function saveDebug(context, artifacts) {
@@ -54,99 +71,106 @@ async function saveDebug(context, artifacts) {
 }
 
 export async function runPipeline(options = {}) {
-  const config = await loadConfig(options.config || 'config/config.jsonc');
-  const docTypes = await scanDocTypes(config);
-  const paths = {
-    input: resolveConfigPath(config, config.paths.input),
-    staging: resolveConfigPath(config, config.paths.staging),
-    output: resolveConfigPath(config, config.paths.output),
-    debug: resolveConfigPath(config, config.paths.debug)
-  };
-
-  const llm = new LlmClient(config);
-  const componentDir = resolveConfigPath(config, config.components.dir || './src/components');
-  const componentModules = {};
-  const entries = await fs.readdir(componentDir, { withFileTypes: true });
-  for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith('.js'))) {
-    const module = await loadComponent(path.join(componentDir, entry.name));
-    if (module.meta?.id) componentModules[module.meta.id] = module;
-  }
-
-  const discovered = await componentModules['discover-documents'].run({ config, paths, artifacts: {} });
-  if (!discovered.ok) throw discovered.error;
-
-  const documents = discovered.artifacts.documents;
-  const results = [];
-  const counters = { output: 1 };
-
-  for (const document of documents) {
-    const context = {
-      config,
-      paths,
-      docTypes,
-      document: { ...document, id: makeDocId(document) },
-      artifacts: {},
-      llm,
-      counters,
-      log: []
+  return withPipelineLock(async () => {
+    const config = await loadConfig(options.config || 'config/config.jsonc');
+    const docTypes = await scanDocTypes(config);
+    const paths = {
+      input: resolveConfigPath(config, config.paths.input),
+      staging: resolveConfigPath(config, config.paths.staging),
+      output: resolveConfigPath(config, config.paths.output),
+      debug: resolveConfigPath(config, config.paths.debug)
     };
 
-    await fs.mkdir(path.join(paths.staging, context.document.id), { recursive: true });
-
-    let session = null;
-    if ((config.llm.imagePolicy || 'session') === 'session') {
-      session = await llm.createSession();
-      context.artifacts.llmSession = session;
+    const llm = new LlmClient(config);
+    const componentDir = resolveConfigPath(config, config.components.dir || './src/components');
+    const componentModules = {};
+    const entries = await fs.readdir(componentDir, { withFileTypes: true });
+    for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith('.js'))) {
+      const module = await loadComponent(path.join(componentDir, entry.name));
+      if (module.meta?.id) componentModules[module.meta.id] = module;
     }
 
-    const errors = [];
-    for (const step of config.pipeline || []) {
-      if (!step.enabled) continue;
-      const component = componentModules[step.component];
-      if (!component) {
-        throw new Error(`Component not found: ${step.component}`);
+    const discovered = await componentModules['discover-documents'].run({ config, paths, artifacts: {} });
+    if (!discovered.ok) throw discovered.error;
+
+    const documents = (discovered.artifacts.documents || []).slice(0, config.processing?.maxDocumentsPerRun || 1);
+    const results = [];
+    const counters = { output: 1 };
+
+    for (const document of documents) {
+      const context = {
+        config,
+        paths,
+        docTypes,
+        document: { ...document, id: makeDocId(document) },
+        artifacts: {},
+        llm,
+        counters,
+        log: []
+      };
+      context.artifacts.document = context.document;
+
+      await fs.mkdir(path.join(paths.staging, context.document.id), { recursive: true });
+
+      let session = null;
+      if ((config.llm.imagePolicy || 'session') === 'session') {
+        session = await llm.createSession();
+        context.artifacts.llmSession = session;
       }
-      try {
-        const result = await component.run(context);
-        if (!result.ok) {
-          errors.push(result.error);
-          if (step.required) break;
-        } else {
-          Object.assign(context.artifacts, result.artifacts || {});
+
+      const errors = [];
+      for (const step of config.pipeline || []) {
+        if (!step.enabled) continue;
+        const component = componentModules[step.component];
+        if (!component) {
+          throw new Error(`Component not found: ${step.component}`);
         }
-      } catch (error) {
-        errors.push({
-          code: error.code || 'COMPONENT_ERROR',
-          message: error.message,
-          stage: step.id,
-          recoverable: false,
-          suggestions: ['inspect debug output']
-        });
-        if (step.required) break;
+        try {
+          const result = await component.run(context);
+          if (!result.ok) {
+            errors.push(result.error);
+            if (step.required) break;
+          } else {
+            Object.assign(context.artifacts, result.artifacts || {});
+          }
+        } catch (error) {
+          errors.push({
+            code: error.code || 'COMPONENT_ERROR',
+            message: error.message,
+            stage: step.id,
+            recoverable: false,
+            suggestions: ['inspect debug output']
+          });
+          if (step.required) break;
+        }
+      }
+
+      if (session) {
+        await llm.closeSession(session);
+      }
+
+      const status = context.artifacts.finalDocument?.status || statusFromErrors(errors);
+      const result = {
+        docId: context.document.id,
+        status,
+        errors,
+        outputPath: context.artifacts.outputPath || null
+      };
+      results.push(result);
+
+      if (result.outputPath) {
+        counters.output += 1;
+      }
+
+      await saveDebug(context, context.artifacts);
+
+      if (errors.some((error) => !error.recoverable)) {
+        process.exitCode = 1;
       }
     }
 
-    if (session) {
-      await llm.closeSession(session);
-    }
-
-    const status = context.artifacts.finalDocument?.status || statusFromErrors(errors);
-    const result = {
-      docId: context.document.id,
-      status,
-      errors,
-      outputPath: context.artifacts.outputPath || null
-    };
-    results.push(result);
-
-    await saveDebug(context, context.artifacts);
-
-    if (errors.some((error) => !error.recoverable)) {
-      process.exitCode = 1;
-    }
-  }
-
-  return results;
+    return results;
+  });
 }
 
 export async function dryRun(options = {}) {
@@ -166,7 +190,7 @@ export async function renderPrompt(options = {}) {
   const config = await loadConfig(options.config || 'config/config.jsonc');
   const docTypes = await scanDocTypes(config);
   const { buildSpecificPrompt, buildUnknownPrompt } = await import('./prompt-builder.js');
-  const docType = options.docType ? docTypes.find((item) => item.type === options.docType) : null;
+  const docType = options.docType ? findDocType(docTypes, options.docType) : null;
   const previousResult = options.previousResult || { docType: docType?.type || 'unknown', confidence: 0.9, fields: {} };
   const prompt = docType
     ? await buildSpecificPrompt(config, docType, previousResult)
@@ -180,17 +204,90 @@ export async function configDoctor(options = {}) {
   const docTypes = await scanDocTypes(config);
   const errors = [];
   const seen = new Set();
+  const promptDir = resolveConfigPath(config, `${config.paths.prompts}/templates`);
+  const componentDir = resolveConfigPath(config, config.components.dir || './src/components');
+  const requiredPaths = [
+    config.paths.input,
+    config.paths.staging,
+    config.paths.output,
+    config.paths.debug,
+    config.paths.docTypes,
+    config.paths.prompts,
+    config.components.dir || './src/components'
+  ];
+
+  for (const relativePath of requiredPaths) {
+    const absolutePath = resolveConfigPath(config, relativePath);
+    try {
+      await fs.access(absolutePath);
+    } catch (_) {
+      errors.push(`Configured path does not exist: ${relativePath}`);
+    }
+  }
+
+  for (const template of ['universal.md', 'specific.md', 'generic-unknown.md']) {
+    try {
+      await fs.access(path.join(promptDir, template));
+    } catch (_) {
+      errors.push(`Prompt template does not exist: ${template}`);
+    }
+  }
+
+  try {
+    await fs.access(componentDir);
+  } catch (_) {
+    errors.push(`Component directory does not exist: ${config.components.dir || './src/components'}`);
+  }
+
+  const activeProfile = config.llm?.profiles?.[config.llm.activeProfile];
+  if (!activeProfile) {
+    errors.push(`Unknown LLM activeProfile: ${config.llm?.activeProfile}`);
+  }
+
+  if (config.processing?.allowParallelDocuments !== false) {
+    errors.push('processing.allowParallelDocuments must be false');
+  }
+
+  if (config.processing?.allowParallelLlmCalls !== false) {
+    errors.push('processing.allowParallelLlmCalls must be false');
+  }
+
+  if (![150, 200].includes(config.rasterize?.dpi)) {
+    errors.push('rasterize.dpi must be 150 or 200');
+  }
+
+  for (const step of config.pipeline || []) {
+    if (!step.component) {
+      errors.push(`Pipeline step is missing component: ${step.id || '<unknown>'}`);
+      continue;
+    }
+    try {
+      await fs.access(path.join(componentDir, `${step.component}.js`));
+    } catch (_) {
+      errors.push(`Pipeline component does not exist: ${step.component}`);
+    }
+  }
 
   for (const docType of docTypes) {
     if (seen.has(docType.type)) errors.push(`Duplicate type: ${docType.type}`);
     seen.add(docType.type);
     if (!docType.name) errors.push(`${docType.type}: missing name`);
-    if (!Array.isArray(docType.firstPassFields)) errors.push(`${docType.type}: missing firstPassFields`);
+    if (!Array.isArray(docType.aliases)) errors.push(`${docType.type}: missing aliases array`);
+    if (!Array.isArray(docType.recognitionFeatures)) errors.push(`${docType.type}: missing recognitionFeatures array`);
+    if (!Array.isArray(docType.firstPassFields)) {
+      errors.push(`${docType.type}: missing firstPassFields array`);
+    } else if (new Set(docType.firstPassFields.map((field) => field.id)).size !== docType.firstPassFields.length) {
+      errors.push(`${docType.type}: duplicate firstPassFields ids`);
+    }
+    if (!Array.isArray(docType.secondPassFields)) {
+      errors.push(`${docType.type}: missing secondPassFields array`);
+    } else if (new Set(docType.secondPassFields.map((field) => field.id)).size !== docType.secondPassFields.length) {
+      errors.push(`${docType.type}: duplicate secondPassFields ids`);
+    }
+    if (!Array.isArray(docType.validationRules) && !docType.validationRules) {
+      errors.push(`${docType.type}: missing validationRules`);
+    }
     if (!docType.crmNaming?.template) errors.push(`${docType.type}: missing crmNaming.template`);
-  }
-
-  if (config.processing?.concurrency !== 1) {
-    errors.push('processing.concurrency must be 1');
   }
 
   const result = {

@@ -8,33 +8,41 @@ export const meta = {
 };
 
 export async function run(context) {
-  const session = await context.llm.createSession();
-  const result = await context.llm.call(session, {
-    image: shouldSendImage(context.config, 'universal') ? context.artifacts.image : null,
-    prompt: context.artifacts.universalPrompt
-  });
-  await context.llm.closeSession(session);
+  let session = context.artifacts.llmSession;
+  const createdSession = !session;
+  if (createdSession) session = await context.llm.createSession();
 
-  if (!result.parsed) {
+  try {
+    const result = await context.llm.call(session, {
+      image: shouldSendImage(context.config, 'universal') ? context.artifacts.image : null,
+      prompt: context.artifacts.universalPrompt
+    });
+
+    if (!result.parsed) {
+      return {
+        ok: false,
+        error: {
+          code: 'LLM_JSON_INVALID',
+          message: 'Universal pass returned non-JSON output.',
+          stage: meta.id,
+          recoverable: true,
+          probableCauses: ['model added markdown', 'model added prose', 'response was truncated'],
+          suggestions: ['repeat request', 'enable fallback profile', 'inspect debug/universal.response.json']
+        }
+      };
+    }
+
     return {
-      ok: false,
-      error: {
-        code: 'LLM_JSON_INVALID',
-        message: 'Universal pass returned non-JSON output.',
-        stage: meta.id,
-        recoverable: true,
-        probableCauses: ['model added markdown', 'model added prose', 'response was truncated'],
-        suggestions: ['repeat request', 'enable fallback profile', 'inspect debug/universal.response.json']
+      ok: true,
+      artifacts: {
+        firstPassResult: result.parsed,
+        llmUniversalRaw: result.raw,
+        llmUniversalText: result.text
       }
     };
-  }
-
-  return {
-    ok: true,
-    artifacts: {
-      firstPassResult: result.parsed,
-      llmUniversalRaw: result.raw,
-      llmUniversalText: result.text
+  } finally {
+    if (createdSession) {
+      await context.llm.closeSession(session);
     }
-  };
+  }
 }

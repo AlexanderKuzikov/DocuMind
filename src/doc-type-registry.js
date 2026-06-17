@@ -34,5 +34,10 @@ export async function scanDocTypes(config) {
 }
 
 export function findDocType(docTypes, type) {
-  return docTypes.find((item) => item.type === type) || null;
+  const normalized = String(type || '').trim().toLowerCase();
+  return docTypes.find((item) => {
+    if (item.type === type) return true;
+    if (String(item.type || '').toLowerCase() === normalized) return true;
+    return (item.aliases || []).some((alias) => String(alias).toLowerCase() === normalized);
+  }) || null;
 }

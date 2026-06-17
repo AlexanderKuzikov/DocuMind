@@ -19,6 +19,7 @@
   },
   "processing": {
     "concurrency": 1,
+    "maxDocumentsPerRun": 1,
     "allowParallelDocuments": false,
     "allowParallelLlmCalls": false
   },

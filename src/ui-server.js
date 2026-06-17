@@ -5,6 +5,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { modify, applyEdits, parseTree } from 'jsonc-parser';
+import JSONC from 'jsonc-parser';
 import { projectRoot } from './lib/paths.js';
 import { resolveFromProject } from './lib/paths.js';
 import { loadConfig, resolveConfigPath } from './lib/config.js';
@@ -13,6 +14,22 @@ import { configDoctor, dryRun, renderPrompt, runPipeline } from './orchestrator.
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 4173;
 const PORT_RANGE_END = 4183;
+let pipelineExecution = Promise.resolve();
+
+async function withPipelineLock(fn) {
+  const previous = pipelineExecution;
+  let release;
+  pipelineExecution = new Promise((resolve) => {
+    release = resolve;
+  });
+
+  await previous.catch(() => {});
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload, null, 2);
@@ -72,6 +89,58 @@ async function writeTextFile(filePath, content) {
   await fs.writeFile(filePath, content.endsWith('\n') ? content : `${content}\n`, 'utf8');
 }
 
+async function backupFile(filePath) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = `${filePath}.bak-${timestamp}`;
+  await fs.copyFile(filePath, backupPath);
+  return backupPath;
+}
+
+async function restoreFile(filePath, backupPath) {
+  await fs.copyFile(backupPath, filePath);
+}
+
+function parseJsoncContent(content, filePath) {
+  const errors = [];
+  const value = JSONC.parse(content, errors, { allowTrailingComma: true });
+  if (errors.length > 0) {
+    const message = errors.map((error) => `${error.offset}: ${error.error}`).join('; ');
+    throw new Error(`Invalid JSONC in ${filePath}: ${message}`);
+  }
+  return value;
+}
+
+function parseJsonContent(content, filePath) {
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    throw new Error(`Invalid JSON in ${filePath}: ${error.message}`);
+  }
+}
+
+async function previewPromptAfterSave(docTypeName) {
+  const freshConfig = await loadConfig('config/config.jsonc');
+  return renderPrompt({ silent: true, docType: docTypeName });
+}
+
+async function saveConfigContent(filePath, content, options = {}) {
+  const backupPath = await backupFile(filePath);
+  try {
+    if (options.parse === 'json') parseJsonContent(content, filePath);
+    if (options.parse === 'jsonc') parseJsoncContent(content, filePath);
+    await writeTextFile(filePath, content);
+    const doctor = await configDoctor({ silent: true });
+    if (!doctor.ok) throw new Error(`Config doctor failed: ${doctor.errors.join('; ')}`);
+    if (options.previewPrompt !== false) {
+      await previewPromptAfterSave(options.docTypeName || 'passport');
+    }
+    return { ok: true, backupPath, doctor };
+  } catch (error) {
+    await restoreFile(filePath, backupPath);
+    throw error;
+  }
+}
+
 async function updateConfigValue(relativePath, jsonPath, value) {
   const filePath = resolveFromProject(relativePath);
   const text = await readTextFile(filePath);
@@ -80,7 +149,8 @@ async function updateConfigValue(relativePath, jsonPath, value) {
   const edits = modify(text, jsonPath, value, {
     formattingOptions: { insertSpaces: true, tabSize: 2 }
   });
-  await writeTextFile(filePath, applyEdits(text, edits));
+  const nextText = applyEdits(text, edits);
+  await saveConfigContent(filePath, nextText, { parse: 'jsonc', previewPrompt: false });
   return { ok: true, path: relativePath };
 }
 
@@ -150,8 +220,9 @@ async function handleApi(req, res, config) {
 
     if (req.method === 'PUT' && url.pathname === '/api/config') {
       const body = await readJsonBody(req);
-      await writeTextFile(resolveFromProject('config/config.jsonc'), body.content);
-      return sendJson(res, 200, { ok: true, path: 'config/config.jsonc' });
+      const filePath = resolveFromProject('config/config.jsonc');
+      const result = await saveConfigContent(filePath, body.content, { parse: 'jsonc' });
+      return sendJson(res, 200, { ok: true, path: 'config/config.jsonc', backupPath: result.backupPath, doctor: result.doctor });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/components') {
@@ -166,8 +237,8 @@ async function handleApi(req, res, config) {
 
     if (req.method === 'PUT' && url.pathname === '/api/pipeline') {
       const body = await readJsonBody(req);
-      await updateConfigValue('config/config.jsonc', ['pipeline'], body.pipeline);
-      return sendJson(res, 200, { ok: true, pipeline: body.pipeline });
+      const result = await updateConfigValue('config/config.jsonc', ['pipeline'], body.pipeline);
+      return sendJson(res, 200, { ok: true, pipeline: body.pipeline, backupPath: result.backupPath, doctor: result.doctor });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/doc-types') {
@@ -184,11 +255,13 @@ async function handleApi(req, res, config) {
 
     if (req.method === 'PUT' && url.pathname.startsWith('/api/doc-types/')) {
       const name = decodeURIComponent(url.pathname.replace('/api/doc-types/', ''));
+      const safeName = path.basename(name, '.json');
       const body = await readJsonBody(req);
       const freshConfig = await loadConfig('config/config.jsonc');
       const dir = resolveConfigPath(freshConfig, freshConfig.paths.docTypes);
-      await writeTextFile(path.join(dir, `${name}.json`), body.content);
-      return sendJson(res, 200, { ok: true, name });
+      const filePath = safeJoin(dir, `${safeName}.json`);
+      const result = await saveConfigContent(filePath, body.content, { parse: 'json', docTypeName: safeName });
+      return sendJson(res, 200, { ok: true, name: safeName, backupPath: result.backupPath, doctor: result.doctor });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/prompts') {
@@ -208,8 +281,9 @@ async function handleApi(req, res, config) {
       const body = await readJsonBody(req);
       const freshConfig = await loadConfig('config/config.jsonc');
       const dir = resolveConfigPath(freshConfig, freshConfig.paths.prompts);
-      await writeTextFile(safeJoin(dir, name), body.content);
-      return sendJson(res, 200, { ok: true, name });
+      const filePath = safeJoin(dir, name);
+      const result = await saveConfigContent(filePath, body.content, { parse: 'text' });
+      return sendJson(res, 200, { ok: true, name, backupPath: result.backupPath, doctor: result.doctor });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/actions/config-doctor') {
@@ -226,7 +300,8 @@ async function handleApi(req, res, config) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/actions/extract') {
-      return sendJson(res, 200, { ok: true, result: await runPipeline({ config: 'config/config.jsonc' }) });
+      const result = await withPipelineLock(() => runPipeline({ config: 'config/config.jsonc' }));
+      return sendJson(res, 200, { ok: true, result });
     }
 
     if (req.method === 'GET' && url.pathname.startsWith('/api/files/')) {

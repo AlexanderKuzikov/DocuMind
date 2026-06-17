@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import * as pdfjs from 'pdfjs-dist';
 import sharp from 'sharp';
 import { createCanvas, Image } from '@napi-rs/canvas';
@@ -29,7 +30,7 @@ class NodeCanvasFactory {
 }
 
 async function rasterizePdfFirstPage(filePath, stagingDir, dpi, format) {
-  const loadingTask = pdfjs.getDocument(filePath);
+  const loadingTask = pdfjs.getDocument(pathToFileURL(filePath).href);
   const pdfDocument = await loadingTask.promise;
   if (pdfDocument.numPages < 1) {
     throw new Error('PDF has no pages');
@@ -91,9 +92,9 @@ async function copyImageFirstPage(filePath, stagingDir, format) {
 }
 
 export async function run(context) {
-  const document = context.artifacts.document;
-  const stagingDir = context.paths.staging;
+  const document = context.document || context.artifacts.document;
   const docId = context.document.id;
+  const stagingDir = path.join(context.paths.staging, docId);
   const ext = path.extname(document.path).toLowerCase();
   const format = context.config.rasterize.format || 'webp';
   const dpi = context.config.rasterize.dpi || 200;
@@ -105,8 +106,8 @@ export async function run(context) {
     image = await copyImageFirstPage(document.path, stagingDir, format);
   }
 
-  await fs.mkdir(path.join(stagingDir, docId), { recursive: true });
-  await fs.writeFile(path.join(stagingDir, docId, 'manifest.json'), JSON.stringify({
+  await fs.mkdir(stagingDir, { recursive: true });
+  await fs.writeFile(path.join(stagingDir, 'manifest.json'), JSON.stringify({
     docId,
     source: document.path,
     image,

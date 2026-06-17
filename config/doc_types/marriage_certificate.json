@@ -31,6 +31,51 @@
       "required": true
     }
   ],
+  "secondPassFields": [
+    {
+      "id": "wife_surname",
+      "label": "Фамилия супруги",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "husband_full_name",
+      "label": "ФИО супруга",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "wife_full_name",
+      "label": "ФИО супруги",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "registry_office",
+      "label": "Орган ЗАГС",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "record_date",
+      "label": "Дата актовой записи",
+      "type": "date",
+      "required": false,
+      "format": "DD.MM.YYYY",
+      "outputFormat": "YYYY-MM-DD"
+    },
+    {
+      "id": "spouses_passports",
+      "label": "Паспортные данные супругов",
+      "type": "array",
+      "required": false
+    }
+  ],
+  "validationRules": [
+    "record_number не должен быть пустым",
+    "marriage_date должен быть корректной датой в формате YYYY-MM-DD",
+    "spouses_passports, если указан, должен быть массивом"
+  ],
   "secondPass": {
     "mode": "free-legal"
   },

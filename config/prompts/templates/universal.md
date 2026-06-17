@@ -15,7 +15,7 @@
 Верни строго JSON:
 
 {
-  "docType": "passport | invoice | marriage_certificate | traffic_accident_appendix | unknown",
+  "docType": "{{allowedDocTypes}}",
   "confidence": 0.0,
   "fields": {}
 }

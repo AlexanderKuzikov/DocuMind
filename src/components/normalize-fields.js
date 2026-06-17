@@ -1,3 +1,5 @@
+import { makeError } from '../lib/error-reporter.js';
+
 export const meta = {
   id: 'normalize-fields',
   version: '0.1.0',
@@ -37,11 +39,19 @@ function normalizeField(field, value) {
     if (rule === 'digits-only') result = normalizeDigits(result);
     if (rule === 'phone') result = normalizePhone(result);
     if (rule.startsWith('length:')) {
-      const length = Number(rule.split(':')[1]);
-      result = String(result).slice(0, length);
+      const lengthSpec = rule.split(':')[1];
+      const allowedLengths = lengthSpec.split('|').map((item) => Number(item.trim())).filter(Number.isFinite);
+      if (allowedLengths.length > 1) {
+        const text = String(result);
+        result = allowedLengths.includes(text.length) ? text : text.slice(0, Math.max(...allowedLengths));
+      } else {
+        const length = Number(lengthSpec);
+        result = String(result).slice(0, length);
+      }
     }
   }
   if (field.type === 'date') result = normalizeDate(result);
+  if (field.type === 'array' && result !== null && result !== undefined && !Array.isArray(result)) result = [result];
   return result;
 }
 
@@ -99,7 +109,7 @@ export async function run(context) {
     },
     crm: {
       documentType: docType,
-      documentNumber: fields.document_number || fields.number || fields.series + (fields.number || '') || fields.invoice_number || fields.record_number || null,
+      documentNumber: fields.document_number || fields.number || (fields.series && fields.number ? `${fields.series}${fields.number}` : null) || fields.invoice_number || fields.record_number || null,
       documentDate: fields.document_date || fields.accident_date || fields.invoice_date || fields.marriage_date || fields.birth_date || null
     },
     createdAt: new Date().toISOString()
