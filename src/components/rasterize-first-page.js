@@ -1,9 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import sharp from 'sharp';
-import { createCanvas, Image, Path2D, DOMMatrix } from '@napi-rs/canvas';
+import { createCanvas, Image, Path2D, DOMMatrix, DOMPoint, DOMRect } from '@napi-rs/canvas';
 import { projectRoot } from '../lib/paths.js';
 
 export const meta = {
@@ -13,9 +12,24 @@ export const meta = {
   output: ['image']
 };
 
-pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
-globalThis.Path2D = Path2D;
-globalThis.DOMMatrix = DOMMatrix;
+let pdfjsPromise;
+
+function ensureCanvasGlobals() {
+  globalThis.Path2D = Path2D;
+  globalThis.DOMMatrix = DOMMatrix;
+  globalThis.DOMPoint = DOMPoint;
+  globalThis.DOMRect = DOMRect;
+}
+
+async function loadPdfJs() {
+  ensureCanvasGlobals();
+  if (!pdfjsPromise) {
+    pdfjsPromise = import('pdfjs-dist/legacy/build/pdf.mjs');
+  }
+  const pdfjs = await pdfjsPromise;
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(path.join(projectRoot, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
+  return pdfjs;
+}
 
 class NodeCanvasFactory {
   create(width, height) {
@@ -32,6 +46,7 @@ class NodeCanvasFactory {
 }
 
 async function rasterizePdfFirstPage(filePath, stagingDir, dpi, format) {
+  const pdfjs = await loadPdfJs();
   const loadingTask = pdfjs.getDocument(pathToFileURL(filePath).href);
   const pdfDocument = await loadingTask.promise;
   if (pdfDocument.numPages < 1) {
