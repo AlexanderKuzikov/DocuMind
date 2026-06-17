@@ -153,11 +153,13 @@ export async function dryRun(options = {}) {
   const config = await loadConfig(options.config || 'config/config.jsonc');
   const docTypes = await scanDocTypes(config);
   const universalPrompt = await import('./prompt-builder.js').then((module) => module.buildUniversalPrompt(config, docTypes));
-  console.log(JSON.stringify({
+  const result = {
     ok: true,
     docTypes: docTypes.map((item) => ({ type: item.type, name: item.name })),
     universalPrompt
-  }, null, 2));
+  };
+  if (!options.silent) console.log(JSON.stringify(result, null, 2));
+  return result;
 }
 
 export async function renderPrompt(options = {}) {
@@ -169,7 +171,8 @@ export async function renderPrompt(options = {}) {
   const prompt = docType
     ? await buildSpecificPrompt(config, docType, previousResult)
     : await buildUnknownPrompt(config, previousResult);
-  console.log(prompt);
+  if (!options.silent) console.log(prompt);
+  return prompt;
 }
 
 export async function configDoctor(options = {}) {
@@ -190,10 +193,12 @@ export async function configDoctor(options = {}) {
     errors.push('processing.concurrency must be 1');
   }
 
-  console.log(JSON.stringify({
+  const result = {
     ok: errors.length === 0,
     errors,
     docTypes: docTypes.map((item) => item.type)
-  }, null, 2));
+  };
+  if (!options.silent) console.log(JSON.stringify(result, null, 2));
   if (errors.length) process.exitCode = 1;
+  return result;
 }

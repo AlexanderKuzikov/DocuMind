@@ -81,6 +81,11 @@
   "components": {
     "dir": "../src/components"
   },
+  "ui": {
+    "host": "127.0.0.1",
+    "defaultPort": 4173,
+    "portRangeEnd": 4183
+  },
   "pipeline": [
     {
       "id": "discoverDocuments",

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DocuMind Local Config UI</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>DocuMind Local Config UI</h1>
+      <p>Local dev tool for config, components, prompts, and pipeline runs.</p>
+    </div>
+    <div class="status" id="status">loading…</div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="config" class="active">Config</button>
+    <button data-tab="pipeline">Pipeline</button>
+    <button data-tab="doc-types">Doc Types</button>
+    <button data-tab="prompts">Prompts</button>
+    <button data-tab="run">Run</button>
+    <button data-tab="files">Files</button>
+  </nav>
+
+  <main>
+    <section id="tab-config" class="tab active">
+      <div class="toolbar">
+        <button data-action="load-config">Reload</button>
+        <button data-action="save-config">Save</button>
+        <button data-action="config-doctor">Config Doctor</button>
+      </div>
+      <textarea id="config-editor" spellcheck="false"></textarea>
+    </section>
+
+    <section id="tab-pipeline" class="tab">
+      <div class="hint">
+        <b>Required</b> means the pipeline stops if this component fails. Optional components can fail and the pipeline continues.
+      </div>
+      <div class="toolbar">
+        <button data-action="load-pipeline">Reload</button>
+        <button data-action="save-pipeline">Save Pipeline</button>
+      </div>
+      <div id="pipeline-list" class="grid"></div>
+    </section>
+
+    <section id="tab-doc-types" class="tab">
+      <div class="two-col">
+        <aside>
+          <div class="toolbar">
+            <button data-action="load-doc-types">Reload</button>
+          </div>
+          <div id="doc-type-list" class="list"></div>
+        </aside>
+        <div>
+          <div class="toolbar">
+            <span id="doc-type-title">Select doc type</span>
+            <button data-action="save-doc-type">Save</button>
+          </div>
+          <textarea id="doc-type-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-prompts" class="tab">
+      <div class="two-col">
+        <aside>
+          <div class="toolbar">
+            <button data-action="load-prompts">Reload</button>
+          </div>
+          <div id="prompt-list" class="list"></div>
+        </aside>
+        <div>
+          <div class="toolbar">
+            <span id="prompt-title">Select prompt</span>
+            <button data-action="save-prompt">Save</button>
+          </div>
+          <textarea id="prompt-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-run" class="tab">
+      <div class="toolbar">
+        <button data-action="config-doctor">Config Doctor</button>
+        <button data-action="dry-run">Dry Run</button>
+        <button data-action="render-prompt">Render Prompt</button>
+        <button data-action="extract">Extract</button>
+        <label>Doc type <input id="render-doc-type" placeholder="passport"></label>
+      </div>
+      <pre id="run-output"></pre>
+    </section>
+
+    <section id="tab-files" class="tab">
+      <div class="toolbar">
+        <button data-action="list-output">List output</button>
+        <button data-action="list-debug">List debug</button>
+      </div>
+      <div class="two-col">
+        <div id="file-list" class="list"></div>
+        <pre id="file-preview"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

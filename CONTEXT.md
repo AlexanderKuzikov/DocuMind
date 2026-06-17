@@ -42,7 +42,8 @@ MVP foundation / demo-ready
 - `config:doctor`;
 - `dry-run`;
 - golden runner;
-- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET.
+- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET;
+- локальный browser UI через `npm run ui`.
 
 Текущий pipeline:
 
@@ -101,6 +102,22 @@ src/components/
 Компоненты не должны напрямую импортировать друг друга. Они работают через общий `context`.
 
 Оркестратор знает порядок pipeline.
+
+### 1.1. Required
+
+`required: true` означает: если компонент упал, pipeline останавливается на этом документе.
+
+`required: false` означает: ошибка компонента сохраняется в результат, но pipeline продолжает следующие шаги.
+
+Это нужно для экспериментальных/опциональных компонентов:
+
+```text
+rotate-image
+quality-check
+llm-normalize
+```
+
+Они могут быть выключены или optional, чтобы быстро проверять гипотезы без поломки всего pipeline.
 
 ### 2. `concurrency: 1`
 
@@ -223,6 +240,23 @@ unknown
 
 Raw stack trace — только в debug/log.
 
+### 11. Production data policy
+
+Реальные юридические документы с персональными данными не отправляются во внешние LLM-сервисы.
+
+Cloud-профили, включая RouterAI, разрешены только для:
+
+```text
+dev
+sandbox
+синтетических документов
+обезличенных fixtures
+```
+
+Production-режим должен работать локально/on-prem через Ollama.
+
+Debug/input/output/staging/golden-репорты могут содержать ПДн и должны оставаться локальными, не коммититься и не отправляться наружу.
+
 ## Конфигурация
 
 Основной конфиг:
@@ -275,6 +309,41 @@ qwen3.6:35b-a3b
 ```
 
 Thinking — экспериментально, пока отключено.
+
+## Local UI
+
+Команда:
+
+```bash
+npm run ui
+```
+
+Адрес:
+
+```text
+http://127.0.0.1:4173
+```
+
+Порт `3000` не используется. Сервер стартует с `4173` и при занятости перебирает `4174–4183`.
+
+UI — это локальный dev-инструмент, не production admin panel.
+
+Он умеет:
+
+- редактировать `config/config.jsonc`;
+- редактировать `config/doc_types/*.json`;
+- редактировать prompt templates;
+- сканировать `src/components/*.js`;
+- читать `meta` компонентов;
+- включать/выключать компоненты;
+- менять `required`;
+- менять порядок pipeline;
+- удалять компонент из pipeline;
+- добавлять новые компоненты, если они лежат в `src/components/` и экспортируют `meta`;
+- запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
+- смотреть файлы из `output/` и `debug/`.
+
+Источник истины для UI — `config/config.jsonc`. UI не должен иметь отдельный хардкодный список компонентов.
 
 ## DPI
 

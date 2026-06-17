@@ -106,7 +106,41 @@ npm run config:doctor
 npm run prompt:render -- --doc-type passport
 npm run test:golden
 npm run check
+npm run ui
 ```
+
+## Local config UI
+
+Запуск локального интерфейса:
+
+```bash
+npm run ui
+```
+
+Интерфейс открывается только на localhost:
+
+```text
+http://127.0.0.1:4173
+```
+
+Порт `3000` специально не используется. При старте сервер проверяет `4173`, а если он занят — перебирает `4174–4183`.
+
+UI умеет:
+
+- редактировать `config/config.jsonc`;
+- редактировать `config/doc_types/*.json`;
+- редактировать prompt templates;
+- читать доступные компоненты из `src/components/`;
+- включать/выключать компоненты в `config.pipeline`;
+- менять `required`;
+- менять порядок шагов;
+- добавлять новые компоненты, если они экспортируют `meta`;
+- запускать `config:doctor`, `dry-run`, `render prompt`, `extract`;
+- смотреть файлы из `output/` и `debug/`.
+
+### Required
+
+`required` означает: если компонент упал, pipeline останавливается. Если `required: false`, ошибка компонента записывается в результат, но pipeline продолжает следующие шаги.
 
 ## Архитектура
 
