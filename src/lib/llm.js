@@ -18,9 +18,13 @@ function mimeFromPath(filePath) {
 }
 
 function normalizeContent(content) {
-  if (typeof content === 'string') return content;
+  if (typeof content === 'string') {
+    // Strip <think>...</think> blocks that some models inline into the string
+    return content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  }
   if (Array.isArray(content)) {
     return content
+      .filter(part => part?.type !== 'thinking') // drop Anthropic-style thinking blocks
       .map((part) => {
         if (typeof part === 'string') return part;
         if (part && typeof part.text === 'string') return part.text;
@@ -160,6 +164,13 @@ export class LlmClient {
       body.thinking = {
         type: 'enabled',
         budget_tokens: this.config.llm.thinking.budgetTokens ?? 4096
+      };
+    } else {
+      // budget_tokens: 0 is the most reliable way to suppress thinking
+      // on routers/proxies that may ignore chat_template_kwargs.
+      body.thinking = {
+        type: 'disabled',
+        budget_tokens: 0
       };
     }
 
