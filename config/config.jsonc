@@ -1,25 +1,25 @@
 {
-  // DocuMind MVP configuration.
-  // This file is JSONC so comments are allowed for humans.
-  "schemaVersion": "0.1.0",
+  // DocuMind MVP configuration: one-pass extraction + grouped document assembly.
+  // Old two-pass components are kept in src/components but disabled here.
+  "schemaVersion": "0.2.0",
   "paths": {
     "input": "../input",
     "staging": "../staging",
     "output": "../output",
     "debug": "../debug",
     "docTypes": "./doc_types",
-    "prompts": "./prompts"
+    "prompts": "./prompts",
+    "fieldMappings": "./field_mappings.json"
   },
   "rasterize": {
-    "page": "first",
+    "page": "all",
     "dpi": 200,
     "quality": 90,
     "lossless": false,
-    "format": "webp"
+    "format": "jpeg"
   },
   "processing": {
-    // 0 = no limit, process all documents found (including subfolders).
-    // Set to a positive integer to limit documents per run (useful for testing).
+    // 0 = no limit, process all documents found (top-level files/folders only).
     "maxDocumentsPerRun": 0,
     "concurrency": 1,
     "allowParallelDocuments": false,
@@ -27,19 +27,11 @@
   },
   "llm": {
     // Default profile for current local experiments with LM Studio.
-    // LM Studio OpenAI-compatible server does not require an API key.
     "activeProfile": "local-lmstudio",
     "imagePolicy": "session",
     "sessionFallback": "each-pass",
-
-    // forceTemperature: overrides temperature for ALL profiles when set.
-    // Set to null to use per-profile temperature values.
     "forceTemperature": 0,
-
-    // disableThinking: when true, forcibly disables thinking/reasoning mode
-    // regardless of profile or thinking.enabled setting.
     "disableThinking": true,
-
     "temperature": 0,
     "thinking": {
       "enabled": false,
@@ -60,9 +52,6 @@
         "model": "qwen3.6:35b-a3b",
         "apiKeyEnv": null,
         "imageEncoding": "base64-prefixed",
-        // LM Studio bug lmstudio-bug-tracker#1752:
-        // rejects data:image/webp;base64,... but accepts data:image/png;base64,...
-        // lmStudioCompat forces mime='png' in data-URL header as a workaround.
         "lmStudioCompat": true,
         "timeout": 300000,
         "stream": false
@@ -79,11 +68,16 @@
     }
   },
   "extraction": {
-    "secondPassMode": "free-legal",
+    "mode": "one-pass",
+    "secondPassMode": "disabled",
     "universalFields": [
-      "document_number",
-      "document_date",
-      "counterparty_name"
+      "ogrn",
+      "registration_record_date",
+      "short_name_ru",
+      "vin",
+      "vehicle_number",
+      "accident_location",
+      "accident_date"
     ]
   },
   "validation": {
@@ -119,8 +113,8 @@
     },
     {
       "order": 2,
-      "id": "rasterizeFirstPage",
-      "component": "rasterize-first-page",
+      "id": "assembleDocumentPdf",
+      "component": "assemble-document-pdf",
       "enabled": true,
       "required": true
     },
@@ -140,31 +134,38 @@
     },
     {
       "order": 5,
+      "id": "normalizeFields",
+      "component": "normalize-fields",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 6,
+      "id": "writeOutput",
+      "component": "write-output",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 7,
+      "id": "rasterizeFirstPage",
+      "component": "rasterize-first-page",
+      "enabled": false,
+      "required": false
+    },
+    {
+      "order": 8,
       "id": "buildSpecificPrompt",
       "component": "build-specific-prompt",
       "enabled": false,
       "required": false
     },
     {
-      "order": 6,
+      "order": 9,
       "id": "llmSpecificPass",
       "component": "llm-specific-pass",
       "enabled": false,
       "required": false
-    },
-    {
-      "order": 7,
-      "id": "normalizeFields",
-      "component": "normalize-fields",
-      "enabled": false,
-      "required": false
-    },
-    {
-      "order": 8,
-      "id": "writeOutput",
-      "component": "write-output",
-      "enabled": true,
-      "required": true
     }
   ]
 }

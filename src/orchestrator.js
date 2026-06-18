@@ -234,6 +234,7 @@ export async function configDoctor(options = {}) {
     config.paths.debug,
     config.paths.docTypes,
     config.paths.prompts,
+    ...(config.paths.fieldMappings ? [config.paths.fieldMappings] : []),
     config.components.dir || './src/components'
   ];
 
@@ -246,7 +247,7 @@ export async function configDoctor(options = {}) {
     }
   }
 
-  for (const template of ['universal.md', 'specific.md', 'generic-unknown.md']) {
+  for (const template of ['universal.md', 'specific.md', 'generic-unknown.md', 'one-pass.md']) {
     try {
       await fs.access(path.join(promptDir, template));
     } catch (_) {
@@ -278,6 +279,10 @@ export async function configDoctor(options = {}) {
     errors.push('processing.allowParallelLlmCalls must be false');
   }
 
+  if (!['first', 'all'].includes(config.rasterize?.page || 'first')) {
+    errors.push('rasterize.page must be "first" or "all"');
+  }
+
   if (![150, 200].includes(config.rasterize?.dpi)) {
     errors.push('rasterize.dpi must be 150 or 200');
   }
@@ -300,6 +305,14 @@ export async function configDoctor(options = {}) {
     if (!docType.name) errors.push(`${docType.type}: missing name`);
     if (!Array.isArray(docType.aliases)) errors.push(`${docType.type}: missing aliases array`);
     if (!Array.isArray(docType.recognitionFeatures)) errors.push(`${docType.type}: missing recognitionFeatures array`);
+    const fields = docType.fields || docType.firstPassFields || [];
+    if (!Array.isArray(fields)) {
+      errors.push(`${docType.type}: missing fields array`);
+    } else if (!fields.length) {
+      errors.push(`${docType.type}: fields array is empty`);
+    } else if (new Set(fields.map((field) => field.id)).size !== fields.length) {
+      errors.push(`${docType.type}: duplicate fields ids`);
+    }
     if (!Array.isArray(docType.firstPassFields)) {
       errors.push(`${docType.type}: missing firstPassFields array`);
     } else if (new Set(docType.firstPassFields.map((field) => field.id)).size !== docType.firstPassFields.length) {
@@ -310,10 +323,7 @@ export async function configDoctor(options = {}) {
     } else if (new Set(docType.secondPassFields.map((field) => field.id)).size !== docType.secondPassFields.length) {
       errors.push(`${docType.type}: duplicate secondPassFields ids`);
     }
-    if (!Array.isArray(docType.validationRules) && !docType.validationRules) {
-      errors.push(`${docType.type}: missing validationRules`);
-    }
-    if (!docType.crmNaming?.template) errors.push(`${docType.type}: missing crmNaming.template`);
+    if (!docType.outputNaming?.template && !docType.crmNaming?.template) errors.push(`${docType.type}: missing outputNaming.template or crmNaming.template`);
   }
 
   const result = {

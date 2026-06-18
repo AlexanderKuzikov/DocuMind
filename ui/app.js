@@ -1,10 +1,12 @@
 const state = {
   docTypes: [],
   prompts: [],
+  fieldMappings: [],
   components: [],
   pipeline: [],
   selectedDocType: null,
-  selectedPrompt: null
+  selectedPrompt: null,
+  selectedFieldMapping: null
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -55,6 +57,20 @@ async function saveConfig() {
     body: JSON.stringify({ content: $('#config-editor').value })
   });
   setStatus('Config saved');
+}
+
+async function loadFieldMappings() {
+  const result = await api('/api/field-mappings');
+  $('#field-mapping-editor').value = result.content;
+  setStatus('Field mappings loaded');
+}
+
+async function saveFieldMappings() {
+  await api('/api/field-mappings', {
+    method: 'PUT',
+    body: JSON.stringify({ content: $('#field-mapping-editor').value })
+  });
+  setStatus('Field mappings saved');
 }
 
 async function loadPipeline() {
@@ -279,6 +295,8 @@ document.addEventListener('click', async (event) => {
     const name = action.dataset.action;
     if (name === 'load-config') return loadConfig();
     if (name === 'save-config') return saveConfig();
+    if (name === 'load-field-mappings') return loadFieldMappings();
+    if (name === 'save-field-mappings') return saveFieldMappings();
     if (name === 'config-doctor') return runAction('config-doctor');
     if (name === 'load-pipeline') return loadPipeline();
     if (name === 'save-pipeline') return savePipeline();
@@ -331,6 +349,7 @@ document.addEventListener('change', async (event) => {
 async function init() {
   try {
     await loadConfig();
+    await loadFieldMappings();
     await loadPipeline();
     await loadDocTypes();
     await loadPrompts();

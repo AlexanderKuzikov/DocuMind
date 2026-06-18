@@ -154,6 +154,12 @@ async function updateConfigValue(relativePath, jsonPath, value) {
   return { ok: true, path: relativePath };
 }
 
+async function saveJsonFile(relativePath, content) {
+  const filePath = resolveFromProject(relativePath);
+  const result = await saveConfigContent(filePath, content, { parse: 'json', previewPrompt: false });
+  return { ok: true, path: relativePath, backupPath: result.backupPath };
+}
+
 async function listJsonFiles(dirPath) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
   return entries
@@ -223,6 +229,20 @@ async function handleApi(req, res, config) {
       const filePath = resolveFromProject('config/config.jsonc');
       const result = await saveConfigContent(filePath, body.content, { parse: 'jsonc' });
       return sendJson(res, 200, { ok: true, path: 'config/config.jsonc', backupPath: result.backupPath, doctor: result.doctor });
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/field-mappings') {
+      return sendJson(res, 200, {
+        ok: true,
+        path: 'config/field_mappings.json',
+        content: await readTextFile(resolveFromProject('config/field_mappings.json'))
+      });
+    }
+
+    if (req.method === 'PUT' && url.pathname === '/api/field-mappings') {
+      const body = await readJsonBody(req);
+      const result = await saveJsonFile('config/field_mappings.json', body.content);
+      return sendJson(res, 200, result);
     }
 
     if (req.method === 'GET' && url.pathname === '/api/components') {

@@ -2,9 +2,9 @@ import { shouldSendImage } from '../lib/llm.js';
 
 export const meta = {
   id: 'llm-universal-pass',
-  version: '0.1.0',
+  version: '0.2.0',
   input: ['image', 'universalPrompt'],
-  output: ['firstPassResult']
+  output: ['firstPassResult', 'rawExtracted']
 };
 
 export async function run(context) {
@@ -36,6 +36,7 @@ export async function run(context) {
       ok: true,
       artifacts: {
         firstPassResult: result.parsed,
+        rawExtracted: result.parsed,
         llmUniversalRaw: result.raw,
         llmUniversalText: result.text
       }

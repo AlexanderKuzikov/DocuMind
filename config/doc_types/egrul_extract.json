@@ -1,0 +1,75 @@
+{
+  "type": "egrul_extract",
+  "name": "Выписка из ЕГРЮЛ",
+  "aliases": [
+    "Выписка из ЕГРЮЛ",
+    "ЕГРЮЛ",
+    "выписка юридического лица"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Выписка из Единого государственного реестра юридических лиц» или «Выписка из ЕГРЮЛ».",
+    "Есть ОГРН организации.",
+    "Есть запись о дате внесения сведений в ЕГРЮЛ.",
+    "Есть полное и сокращённое наименование юридического лица на русском языке."
+  ],
+  "fields": [
+    {
+      "id": "ogrn",
+      "label": "ОГРН",
+      "type": "string",
+      "required": true,
+      "normalization": ["digits-only", "length:13"],
+      "extractionHint": "13 цифр. Брать именно ОГРН организации, не номер записи и не номер выписки."
+    },
+    {
+      "id": "registration_record_date",
+      "label": "Дата внесения записи в ЕГРЮЛ",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата внесения записи, содержащей указанные сведения. Не дата выписки."
+    },
+    {
+      "id": "short_name_ru",
+      "label": "Сокращённое наименование на русском языке",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Например: ООО «Название» или ООО \"Название\"."
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "ogrn",
+      "label": "ОГРН",
+      "type": "string",
+      "required": true,
+      "normalization": ["digits-only", "length:13"]
+    },
+    {
+      "id": "registration_record_date",
+      "label": "Дата внесения записи в ЕГРЮЛ",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"]
+    },
+    {
+      "id": "short_name_ru",
+      "label": "Сокращённое наименование на русском языке",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"]
+    }
+  ],
+  "secondPassFields": [],
+  "validationRules": [
+    "ОГРН должен содержать ровно 13 цифр.",
+    "Для именования выходного файла использовать дату внесения записи в ЕГРЮЛ, а не дату выписки."
+  ],
+  "crmNaming": {
+    "template": "Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}"
+  },
+  "outputNaming": {
+    "template": "Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}"
+  }
+}

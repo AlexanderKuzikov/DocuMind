@@ -10,7 +10,8 @@ function render(template, values) {
 function formatField(field) {
   const required = field.required ? 'required' : 'optional';
   const validation = field.validation ? `, validation=${field.validation}` : '';
-  return `- ${field.id} — ${field.label}, ${field.type}, ${required}${validation}`;
+  const hint = field.extractionHint ? ` — ${field.extractionHint}` : '';
+  return `- ${field.id} — ${field.label}, ${field.type}, ${required}${validation}${hint}`;
 }
 
 function formatValidationRule(rule) {
@@ -59,6 +60,15 @@ export function buildSecondPassFields(docTypes) {
     .join('\n\n');
 }
 
+export function buildOnePassFields(docTypes) {
+  return docTypes
+    .map((docType) => {
+      const fields = (docType.fields || docType.firstPassFields || []).map(formatField).join('\n');
+      return `${docType.type}:\n${fields}`;
+    })
+    .join('\n\n');
+}
+
 export function buildValidationRules(docTypes) {
   return docTypes
     .map((docType) => {
@@ -70,7 +80,21 @@ export function buildValidationRules(docTypes) {
     .join('\n\n');
 }
 
+export async function buildOnePassPrompt(config, docTypes) {
+  const template = await readTemplate(config, 'one-pass');
+  return render(template, {
+    typesList: buildTypesList(docTypes),
+    recognitionFeatures: buildRecognitionFeatures(docTypes),
+    onePassFields: buildOnePassFields(docTypes),
+    allowedDocTypes: docTypes.map((docType) => docType.type).concat(['unknown']).join(' | ')
+  });
+}
+
 export async function buildUniversalPrompt(config, docTypes) {
+  if (config.extraction?.mode === 'one-pass') {
+    return buildOnePassPrompt(config, docTypes);
+  }
+
   const template = await readTemplate(config, 'universal');
   return render(template, {
     typesList: buildTypesList(docTypes),

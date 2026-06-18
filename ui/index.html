@@ -17,6 +17,7 @@
 
   <nav class="tabs">
     <button data-tab="config" class="active">Config</button>
+    <button data-tab="field-mappings">Field Mappings</button>
     <button data-tab="pipeline">Pipeline</button>
     <button data-tab="doc-types">Doc Types</button>
     <button data-tab="prompts">Prompts</button>
@@ -36,6 +37,18 @@
         <button data-action="config-doctor">Config Doctor</button>
       </div>
       <textarea id="config-editor" spellcheck="false"></textarea>
+    </section>
+
+    <section id="tab-field-mappings" class="tab">
+      <div class="hint">
+        <b>Field Mappings:</b> понятный маппинг технических ключей, labels и подсказок для извлечения.
+        Это отдельный <code>config/field_mappings.json</code>; его можно менять через UI без правки кода.
+      </div>
+      <div class="toolbar">
+        <button data-action="load-field-mappings">Reload</button>
+        <button data-action="save-field-mappings">Save</button>
+      </div>
+      <textarea id="field-mapping-editor" spellcheck="false"></textarea>
     </section>
 
     <section id="tab-pipeline" class="tab">

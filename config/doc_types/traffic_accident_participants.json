@@ -1,0 +1,61 @@
+{
+  "type": "traffic_accident_participants",
+  "name": "Сведения об участниках ДТП",
+  "aliases": [
+    "Сведения об участниках ДТП",
+    "участники ДТП",
+    "приложение к постановлению",
+    "сведения о водителях"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Сведения об участниках ДТП» или похожий раздел о водителях/участниках.",
+    "Есть место/адрес ДТП.",
+    "Есть дата ДТП.",
+    "Документ может быть приложением к постановлению или определению."
+  ],
+  "fields": [
+    {
+      "id": "accident_location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Место/адрес ДТП. Лучше использовать формулировку «Место ДТП», потому что это может быть трасса, участок дороги или иной ориентир."
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата дорожно-транспортного происшествия."
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "accident_location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"]
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"]
+    }
+  ],
+  "secondPassFields": [],
+  "validationRules": [
+    "Место ДТП должно быть указано как адрес, трасса, участок дороги или иной понятный ориентир.",
+    "Дата ДТП должна быть приведена к формату YYYY-MM-DD."
+  ],
+  "crmNaming": {
+    "template": "Сведения об участниках ДТП {accident_date}"
+  },
+  "outputNaming": {
+    "template": "Сведения об участниках ДТП {accident_date}"
+  }
+}
