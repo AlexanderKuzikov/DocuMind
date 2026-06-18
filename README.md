@@ -127,7 +127,6 @@ npm run extract
 Остаются:
 
 - полноценный golden set на реальных документах;
-- проверка RouterAI;
 - проверка офисного Ollama-сервера в локальной сети;
 - расширение нормализации под юридически полный набор полей;
 - CI/quality gates.
@@ -185,10 +184,28 @@ lmStudioCompat: true
 Профили:
 
 ```text
-mvp-routerai      — RouterAI.ru, dev/sandbox
+mvp-routerai      — RouterAI.ru, dev/sandbox только
 local-lmstudio    — локальные быстрые тесты
 prod-ollama       — целевой on-prem/Ollama-профиль
 ```
+
+### RouterAI / OpenRouter-совместимые провайдеры
+
+Для работы `mvp-routerai` нужно прописать ключ в `.env` без кавычек:
+
+```env
+ROUTERAI_API_KEY=your_key_here
+```
+
+Если видите ошибку `Missing API key env variable: ROUTERAI_API_KEY` при правильном ключе — проверьте функцию `getEnvValue` в `src/lib/llm.js`: она может читать не из `process.env`.
+
+Для моделей с `disableThinking: true` (Qwen3 и аналоги) в теле запроса автоматически добавляется:
+
+```json
+{ "reasoning_effort": "none" }
+```
+
+Это обязательно для корректной работы с RouterAI.ru и аналогичными OpenRouter-совместимыми провайдерами.
 
 Добавление нового типа документа:
 

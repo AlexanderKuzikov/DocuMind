@@ -249,6 +249,23 @@ qwen3.6:35b-a3b
 
 Thinking — экспериментально, пока отключено.
 
+### RouterAI / OpenRouter-совместимые провайдеры — важно
+
+Для моделей с `disableThinking: true` (Qwen3 и аналоги) провайдеры типа RouterAI.ru требуют явного параметра:
+
+```json
+{ "reasoning_effort": "none" }
+```
+
+В `src/lib/llm.js` при `disableThinking: true` отправляется тройная защита:
+
+```js
+body.thinking = { type: 'disabled', budget_tokens: 0 }; // Anthropic / vLLM
+body.reasoning_effort = 'none';                          // OpenRouter / RouterAI
+```
+
+Если видишь ошибку `Missing API key env variable: ROUTERAI_API_KEY` при правильно прописанном ключе — смотри не `.env`, а функцию `getEnvValue` в `src/lib/llm.js`: она может читать переменные не из `process.env`.
+
 ---
 
 ## Local UI
@@ -409,6 +426,7 @@ golden/
 - Б-1: `local-lmstudio` получил `imageEncoding: "base64-prefixed"`.
 - Б-3: `normalize-fields` исправлен.
 - Б-4: `llm.js` нормально обрабатывает `content` как массив.
+- Б-5: RouterAI — `ROUTERAI_API_KEY` не читался из `.env`; добавлен `reasoning_effort: "none"` для OpenRouter-провайдеров.
 - В-1: prompt/text идёт перед image.
 - В-4: output naming больше не зависит от `selectedDocType` в итоговом JSON.
 - Выдуманные типы документов удалены.
@@ -422,7 +440,6 @@ golden/
 ### Still open
 
 - Нет полноценного golden set на реальных документах.
-- RouterAI-профиль ещё нужно проверить на реальных документах.
 - Ollama office server ещё нужно проверить.
 - Таймаут в `llm.js` не покрывает `response.json()`.
 - Lifecycle сессии размазан между orchestrator и LLM components.

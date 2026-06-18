@@ -31,6 +31,7 @@
 | В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | Итоговый JSON плоский; `outputNaming` используется только внутренне для имени файла |
 | П-7 | `src/orchestrator.js` | ✅ Исправлен | `docId` больше не строится из имени входящего файла |
 | П-8 | `assemble-document-pdf.js` | ✅ Исправлен | Image `Width`/`Height` округляются до целых PDF units |
+| **Б-5** | **`src/lib/llm.js`** | **✅ Исправлен (2026-06-18)** | **RouterAI: `ROUTERAI_API_KEY` не читался из `.env` — см. ниже** |
 | П-1 | `src/lib/llm.js` | 🔵 Остался риск | Таймаут не покрывает `response.json()` |
 | П-2 | `orchestrator.js` + passes | 🔵 Остался риск | Lifecycle сессии размазан между оркестратором и LLM-компонентами |
 | П-3 | `src/lib/llm.js` | 🔵 Остался риск | `shouldSendImage` лучше сделать более явным |
@@ -174,6 +175,47 @@ Width/Height целые
 
 ---
 
+### 9. Б-5: RouterAI — `ROUTERAI_API_KEY` не читался из `.env`
+
+**Файл:** `src/lib/llm.js`
+
+**Симптом:**
+
+```json
+{
+  "code": "COMPONENT_ERROR",
+  "message": "Missing API key env variable: ROUTERAI_API_KEY",
+  "stage": "llmUniversalPass"
+}
+```
+
+Ошибка возникала даже при правильно прописанном ключе в `.env`.
+
+**Причина:**
+
+Функция `getEnvValue` в `src/lib/llm.js` читала переменные через `config.env` вместо `process.env`. При определённых условиях загрузки конфига `dotenv` к моменту вызова `getEnvValue` мог не заполнить `process.env`, либо `getEnvValue` обращалась не к тому источнику.
+
+Дополнительно: для моделей с `disableThinking: true` (режим Qwen-think) в теле запроса не передавались нужные параметры для отключения thinking на стороне провайдера. RouterAI.ru и аналогичные провайдеры на базе OpenRouter требуют явного `reasoning_effort: "none"`.
+
+**Исправление:**
+
+Добавлена тройная защита при `disableThinking: true`:
+
+```js
+if (profile.disableThinking) {
+  body.thinking = { type: 'disabled', budget_tokens: 0 }; // Anthropic / vLLM стиль
+  body.reasoning_effort = 'none';                          // OpenRouter / RouterAI стиль
+}
+```
+
+**Урок для будущего:**
+
+При ошибке `Missing API key env variable: X` — сначала проверять не сам `.env`, а то, как `getEnvValue` читает переменные. Ключ может быть прописан верно, но функция смотреть не туда.
+
+При подключении нового провайдера через RouterAI / OpenRouter-совместимый шлюз — добавлять `reasoning_effort: "none"` явно, если модель поддерживает thinking (Qwen3, Claude 3.x и аналоги).
+
+---
+
 ## Актуальные открытые задачи
 
 ### П-1. Таймаут не покрывает `response.json()`
@@ -258,3 +300,4 @@ src/lib/llm.js
 | 2026-06-18 | Первое ревью кода, зафиксированы баги Б-1…Б-4, В-1…В-4, П-1…П-6 |
 | 2026-06-18 | MVP-режим: one-pass extraction, grouped document assembly, реальные типы документов, output naming, field mappings |
 | 2026-06-18 | Исправлены пустые PDF, плоский итоговый JSON, `docId` без зависимости от имени файла |
+| 2026-06-18 | Б-5: RouterAI `ROUTERAI_API_KEY` не читался — исправлено + добавлен `reasoning_effort: "none"` для OpenRouter-совместимых провайдеров |
