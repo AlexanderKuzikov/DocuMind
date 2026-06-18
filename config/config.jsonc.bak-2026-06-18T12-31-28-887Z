@@ -1,0 +1,171 @@
+{
+  // DocuMind MVP configuration: one-pass extraction + grouped document assembly.
+  // Old two-pass components are kept in src/components but disabled here.
+  "schemaVersion": "0.2.0",
+  "paths": {
+    "input": "../input",
+    "staging": "../staging",
+    "output": "../output",
+    "debug": "../debug",
+    "docTypes": "./doc_types",
+    "prompts": "./prompts",
+    "fieldMappings": "./field_mappings.json"
+  },
+  "rasterize": {
+    "page": "all",
+    "dpi": 200,
+    "quality": 90,
+    "lossless": false,
+    "format": "jpeg"
+  },
+  "processing": {
+    // 0 = no limit, process all documents found (top-level files/folders only).
+    "maxDocumentsPerRun": 0,
+    "concurrency": 1,
+    "allowParallelDocuments": false,
+    "allowParallelLlmCalls": false
+  },
+  "llm": {
+    // Default profile for current local experiments with LM Studio.
+    "activeProfile": "local-lmstudio",
+    "imagePolicy": "session",
+    "sessionFallback": "each-pass",
+    "forceTemperature": 0,
+    "disableThinking": true,
+    "temperature": 0,
+    "thinking": {
+      "enabled": false,
+      "effort": "medium"
+    },
+    "profiles": {
+      "mvp-routerai": {
+        "baseUrl": "https://routerai.ru/v1",
+        "model": "qwen/qwen3.6-35b-a3b",
+        "apiKeyEnv": "ROUTERAI_API_KEY",
+        "imageEncoding": "base64-prefixed",
+        "lmStudioCompat": false,
+        "timeout": 180000,
+        "stream": false
+      },
+      "local-lmstudio": {
+        "baseUrl": "http://127.0.0.1:1234/v1",
+        "model": "qwen3.6:35b-a3b",
+        "apiKeyEnv": null,
+        "imageEncoding": "base64-prefixed",
+        "lmStudioCompat": true,
+        "timeout": 300000,
+        "stream": false
+      },
+      "prod-ollama": {
+        "baseUrl": "http://127.0.0.1:11434/v1",
+        "model": "qwen3.6:35b-a3b",
+        "apiKeyEnv": null,
+        "imageEncoding": "base64-prefixed",
+        "lmStudioCompat": false,
+        "timeout": 300000,
+        "stream": false
+      }
+    }
+  },
+  "extraction": {
+    "mode": "one-pass",
+    "secondPassMode": "disabled",
+    "universalFields": [
+      "ogrn",
+      "registration_record_date",
+      "short_name_ru",
+      "vin",
+      "vehicle_number",
+      "accident_location",
+      "accident_date"
+    ]
+  },
+  "validation": {
+    "deterministic": true,
+    "llm": {
+      "enabled": false,
+      "profile": "local-lmstudio",
+      "temperature": 0,
+      "timeout": 120000
+    }
+  },
+  "debug": {
+    "enabled": true,
+    "saveRenderedPrompts": true,
+    "saveModelResponses": true,
+    "saveArtifacts": true
+  },
+  "components": {
+    "dir": "../src/components"
+  },
+  "ui": {
+    "host": "127.0.0.1",
+    "defaultPort": 4173,
+    "portRangeEnd": 4183
+  },
+  "pipeline": [
+    {
+      "order": 1,
+      "id": "discoverDocuments",
+      "component": "discover-documents",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 2,
+      "id": "assembleDocumentPdf",
+      "component": "assemble-document-pdf",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 3,
+      "id": "buildUniversalPrompt",
+      "component": "build-universal-prompt",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 4,
+      "id": "llmUniversalPass",
+      "component": "llm-universal-pass",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 5,
+      "id": "normalizeFields",
+      "component": "normalize-fields",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 6,
+      "id": "writeOutput",
+      "component": "write-output",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 7,
+      "id": "rasterizeFirstPage",
+      "component": "rasterize-first-page",
+      "enabled": false,
+      "required": false
+    },
+    {
+      "order": 8,
+      "id": "buildSpecificPrompt",
+      "component": "build-specific-prompt",
+      "enabled": false,
+      "required": false
+    },
+    {
+      "order": 9,
+      "id": "llmSpecificPass",
+      "component": "llm-specific-pass",
+      "enabled": false,
+      "required": false
+    }
+  ]
+}
