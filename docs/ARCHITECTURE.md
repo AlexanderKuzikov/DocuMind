@@ -1,46 +1,251 @@
 # Architecture
 
-DocuMind is built as a small, config-driven orchestrator.
+DocuMind is built as a small, config-driven orchestrator for legal/document extraction workflows.
 
-## Pipeline
+The repository keeps the extensible component architecture, but the current active mode is a focused MVP:
+
+```text
+grouped input document
+  → one assembled PDF
+  → one-pass docType detection
+  → one-pass field extraction
+  → normalized JSON
+  → renamed PDF + JSON in output/
+```
+
+## Active MVP pipeline
+
+Configured in `config/config.jsonc`:
 
 ```text
 discover-documents
   ↓
-rasterize-first-page
+assemble-document-pdf
   ↓
 build-universal-prompt
   ↓
 llm-universal-pass
-  ↓
-build-specific-prompt
-  ↓
-llm-specific-pass
   ↓
 normalize-fields
   ↓
 write-output
 ```
 
+Disabled legacy components are still present for future development:
+
+```text
+rasterize-first-page
+build-specific-prompt
+llm-specific-pass
+```
+
+They are not deleted. They are just disabled in the active pipeline.
+
 ## Components
 
-Each component lives in `src/components/` and has a `run(context)` function.
+Each component lives in `src/components/` and exports:
+
+```js
+export const meta = {
+  id: 'component-id',
+  version: '0.1.0',
+  input: [],
+  output: []
+};
+
+export async function run(context) {
+  // ...
+}
+```
 
 Components do not import each other. They communicate only through the shared `context`.
 
-## Orchestration
+## Document grouping
 
-`src/orchestrator.js` is responsible for:
+`discover-documents` groups documents from `input/`:
 
-- loading config;
-- loading doc types;
-- loading components;
-- running the pipeline in order;
-- creating/closing LLM sessions;
-- writing debug artifacts;
-- enforcing sequential execution with a pipeline lock.
+```text
+top-level file  → one document
+top-level dir   → one document
+```
 
-The orchestrator should stay “dumb”: no business logic inside it.
+Inside a grouped document, supported files are collected and later assembled into one PDF.
+
+Incoming file names are not used for:
+
+- document type detection;
+- output naming;
+- field extraction.
+
+Document type is detected from document content.
+
+## PDF assembly
+
+`assemble-document-pdf` creates one normalized PDF per document.
+
+Supported inputs:
+
+- PDF;
+- PNG;
+- JPG/JPEG;
+- WebP.
+
+Behavior:
+
+- PDF pages are rasterized;
+- images are converted to JPEG;
+- all pages/files are assembled into one PDF;
+- the first page image is passed to the LLM.
+
+The component writes assembled artifacts to `staging/<docId>/`.
+
+## One-pass extraction
+
+The MVP prompt is:
+
+```text
+config/prompts/templates/one-pass.md
+```
+
+It is rendered by `build-universal-prompt` when:
+
+```jsonc
+{
+  "extraction": {
+    "mode": "one-pass"
+  }
+}
+```
+
+The model must return strict JSON:
+
+```json
+{
+  "docType": "egrul_extract | vehicle_registration_certificate | traffic_accident_participants | unknown",
+  "confidence": 0.95,
+  "fields": {
+    "field_id": "value"
+  }
+}
+```
+
+The prompt explicitly forbids using the incoming filename.
+
+## Registered MVP document types
+
+### `egrul_extract`
+
+Name:
+
+```text
+Выписка из ЕГРЮЛ
+```
+
+Fields:
+
+```text
+ogrn
+registration_record_date
+short_name_ru
+```
+
+Important rule:
+
+```text
+registration_record_date is the date of the EGRUL record entry, not the extract issue date.
+```
+
+Output template:
+
+```text
+Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}
+```
+
+### `vehicle_registration_certificate`
+
+Name:
+
+```text
+Свидетельство о регистрации ТС
+```
+
+Fields:
+
+```text
+vin
+vehicle_number
+```
+
+Output template:
+
+```text
+СТС {vehicle_number}
+```
+
+### `traffic_accident_participants`
+
+Name:
+
+```text
+Сведения об участниках ДТП
+```
+
+Fields:
+
+```text
+accident_location
+accident_date
+```
+
+Important rule:
+
+```text
+accident_location is labelled as "Место ДТП", because it can be an address, road, highway segment, or other landmark.
+```
+
+Output template:
+
+```text
+Сведения об участниках ДТП {accident_date}
+```
+
+## Normalization
+
+`normalize-fields` is responsible for:
+
+- reading `docType` from the one-pass JSON;
+- mapping technical fields;
+- normalizing dates to `YYYY-MM-DD`;
+- normalizing VIN/vehicle number to uppercase;
+- checking required fields;
+- setting `selectedDocType`;
+- preparing the final document object for `write-output`.
+
+## Output writer
+
+`write-output` writes two files to `output/`:
+
+```text
+output/<name>.pdf
+output/<name>.json
+```
+
+The JSON includes:
+
+```text
+docId
+docType
+docTypeName
+status
+pdfFileName
+jsonFileName
+fields
+validation
+source
+createdAt
+```
+
+If an output name already exists, the writer adds a numeric suffix such as `_001`.
 
 ## Config
 
@@ -56,11 +261,31 @@ Doc types:
 config/doc_types/*.json
 ```
 
+Field mappings:
+
+```text
+config/field_mappings.json
+```
+
 Prompt templates:
 
 ```text
 config/prompts/templates/*.md
 ```
+
+## Orchestration
+
+`src/orchestrator.js` is responsible for:
+
+- loading config;
+- loading doc types;
+- loading components;
+- running the pipeline in order;
+- creating/closing LLM sessions;
+- writing debug artifacts;
+- enforcing sequential execution with a pipeline lock.
+
+The orchestrator should stay “dumb”: no business logic inside it.
 
 ## LLM session policy
 
@@ -69,7 +294,8 @@ Current default:
 ```json
 {
   "llm": {
-    "imagePolicy": "session"
+    "imagePolicy": "session",
+    "sessionFallback": "each-pass"
   }
 }
 ```
@@ -77,41 +303,11 @@ Current default:
 Meaning:
 
 ```text
-Pass 1: image + universal prompt
-Pass 2: previous result + legal extraction prompt
+The assembled first-page image and one-pass prompt are sent once.
+If the provider does not retain session context, fallback sends the image in each pass.
 ```
 
-If the provider does not support session retention, fallback should be configured via:
-
-```json
-{
-  "llm": {
-    "sessionFallback": "each-pass"
-  }
-}
-```
-
-The orchestrator owns the shared session when `imagePolicy: "session"`. Individual LLM components can create and close their own short-lived session when no shared session exists.
-
-## Output
-
-The final output is a JSON file in `output/`.
-
-It contains:
-
-```text
-docId
-docType
-docTypeName
-status
-source
-firstPass
-rawExtracted
-fields
-validation
-crm
-createdAt
-```
+For the current MVP there is only one LLM pass.
 
 ## Error handling
 
@@ -129,3 +325,15 @@ suggestions
 ```
 
 The user should see what happened, where it happened, and what can be done next.
+
+## Data policy
+
+Real legal documents with personal data must not be sent to external LLM services.
+
+Profiles:
+
+- `local-lmstudio` — local experiments;
+- `mvp-routerai` — dev/sandbox/anonymized fixtures;
+- `prod-ollama` — target on-prem/office server.
+
+`input/`, `output/`, `staging/`, `debug/`, and golden reports may contain personal data and must not be committed.

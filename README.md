@@ -5,24 +5,100 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind)
 [![Node.js >=22](https://img.shields.io/badge/Node.js-%3E%3D22-blue)](https://nodejs.org/)
 [![Pipeline](https://img.shields.io/badge/pipeline-concurrency%3A1-green)](https://github.com/AlexanderKuzikov/DocuMind)
-[![LLM](https://img.shields.io/badge/LLM-RouterAI%20%2F%20Ollama-purple)](https://github.com/AlexanderKuzikov/DocuMind)
+[![LLM](https://img.shields.io/badge/LLM-LM%20Studio%20%2F%20RouterAI%20%2F%20Ollama-purple)](https://github.com/AlexanderKuzikov/DocuMind)
 
 DocuMind — Node.js orchestrator для config-driven извлечения юридически значимых данных из документов.
 
-Текущая цель проекта — минимальный законченный workflow:
+## Текущий MVP
+
+Текущий активный режим — **one-pass extraction + сборка документа в единый PDF**.
+
+Приложение:
+
+1. читает документы из `input/`;
+2. группирует документы:
+   - top-level файл = один документ;
+   - top-level папка = один документ;
+3. игнорирует мусор в имени входящего файла;
+4. определяет тип документа только по содержанию;
+5. растрирует/собирает документ в единый PDF;
+6. за один LLM-проход извлекает 2–3 обязательных поля;
+7. сохраняет PDF и JSON в `output/`.
+
+Активный pipeline:
 
 ```text
-input folder
-  → первый документ
-  → первая страница
-  → raster 150/200 dpi
-  → маленький universal prompt, собранный из `config/doc_types/*.json`
-  → определение типа документа + опорные поля
-  → выбор `config/doc_types/<type>.json`
-  → широкий legal extraction prompt в той же LLM-сессии
-  → извлечение всех юридически значимых данных
-  → нормализация
-  → CRM/legal-ready JSON
+input/
+  → discover-documents
+  → assemble-document-pdf
+  → build-universal-prompt
+  → llm-universal-pass
+  → normalize-fields
+  → write-output
+  → output/<имя>.pdf
+  → output/<имя>.json
+```
+
+Старые компоненты двухпроходного pipeline не удалены. Они оставлены в `src/components/` для дальнейшего развития, но в `config/config.jsonc` сейчас отключены.
+
+## Поддерживаемые типы документов
+
+Сейчас в MVP зарегистрированы только реальные типы:
+
+| Technical key | Название | Обязательные поля |
+|---|---|---|
+| `egrul_extract` | Выписка из ЕГРЮЛ | `ogrn`, `registration_record_date`, `short_name_ru` |
+| `vehicle_registration_certificate` | Свидетельство о регистрации ТС | `vin`, `vehicle_number` |
+| `traffic_accident_participants` | Сведения об участниках ДТП | `accident_location`, `accident_date` |
+
+Входящие имена файлов не используются для определения типа документа и не используются для именования результата.
+
+## Именование выходных файлов
+
+Выходные файлы формируются по шаблонам из `config/doc_types/*.json`.
+
+### Выписка из ЕГРЮЛ
+
+```text
+Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}.pdf
+Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}.json
+```
+
+Важно: для `registration_record_date` используется дата внесения записи в ЕГРЮЛ, а не дата выписки.
+
+### СТС
+
+```text
+СТС {vehicle_number}.pdf
+СТС {vehicle_number}.json
+```
+
+### Сведения об участниках ДТП
+
+```text
+Сведения об участниках ДТП {accident_date}.pdf
+Сведения об участниках ДТП {accident_date}.json
+```
+
+Для ДТП поле `accident_location` имеет label `Место ДТП`, потому что это может быть не только адрес, но и трасса, участок дороги или иной ориентир.
+
+## JSON output
+
+Каждый JSON содержит минимум:
+
+```json
+{
+  "docId": "...",
+  "docType": "egrul_extract",
+  "docTypeName": "Выписка из ЕГРЮЛ",
+  "status": "ok",
+  "pdfFileName": "Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf",
+  "fields": {
+    "ogrn": "1045900353443",
+    "registration_record_date": "2025-12-10",
+    "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
+  }
+}
 ```
 
 ## Статус
@@ -31,21 +107,35 @@ input folder
 MVP foundation / demo-ready, не production-complete
 ```
 
-Текущая версия уже умеет собрать pipeline, прогнать документ через LLM и записать JSON. Пройдены базовые проверки `npm run check`, `npm run config:doctor`, `npm run dry-run`, `npm run prompt:render -- --doc-type passport` и `npm run test:golden`.
+Пройдены базовые проверки:
 
-Остаются реальные golden set-тесты, доводка нормализации и проверка на документах пользователя.
+```bash
+npm run check
+npm run config:doctor
+npm run dry-run
+npm run extract
+```
+
+Остаются:
+
+- полноценный golden set на реальных документах;
+- проверка RouterAI;
+- проверка офисного Ollama-сервера в локальной сети;
+- расширение нормализации под юридически полный набор полей;
+- CI/quality gates.
 
 ## Принципы
 
-- Node.js, работает на Windows 10/11 и Linux.
+- Node.js, Windows 10/11 и Linux.
 - Управление через конфиг.
 - Типы документов описываются в `config/doc_types/*.json`.
+- Поля и русские labels описываются в `config/doc_types/*.json`.
+- Понятный маппинг технических ключей хранится в `config/field_mappings.json`.
 - Промпты собираются автоматически из шаблонов и конфигов типов.
 - Обработка строго последовательная: `concurrency: 1`.
 - Один активный документ и один активный LLM-запрос за раз.
 - Компоненты вынесены в отдельные файлы и подключаются через оркестратор.
-- `mvp-routerai` uses RouterAI and sends images as `base64,<base64>` because RouterAI rejects OpenAI-style `data:` image URLs;
-- `local-lmstudio` and `prod-ollama` use the default OpenAI-compatible `data-url` format;
+- Production-документы с персональными данными не отправляем во внешние LLM-сервисы.
 
 ## Быстрый старт
 
@@ -63,6 +153,8 @@ npm run extract
 
 Результаты будут в `output/`, отладочные артефакты — в `debug/`.
 
+Runtime-результаты `output/` игнорируются git, чтобы не коммитить документы и ПДн.
+
 ## Конфигурация
 
 Основной конфиг:
@@ -73,31 +165,29 @@ config/config.jsonc
 
 Это JSONC, поэтому в нём разрешены комментарии. Секреты в конфиг не кладутся.
 
-Пример переменных:
-
-```env
-ROUTERAI_API_KEY=
-INTERNAL_LLM_API_KEY=
-```
-
-Текущий активный профиль — локальная LM Studio:
+Текущий активный профиль для быстрых тестов:
 
 ```text
 local-lmstudio
 baseUrl: http://127.0.0.1:1234/v1
 model: qwen3.6:35b-a3b
 apiKeyEnv: null
+imageEncoding: base64-prefixed
+lmStudioCompat: true
 ```
 
-LM Studio в OpenAI-compatible режиме не требует API key.
-
-Типы документов добавляются одним файлом:
+Профили:
 
 ```text
-config/doc_types/passport.json
-config/doc_types/invoice.json
-config/doc_types/marriage_certificate.json
-config/doc_types/traffic_accident_appendix.json
+mvp-routerai      — RouterAI.ru, dev/sandbox
+local-lmstudio    — локальные быстрые тесты
+prod-ollama       — целевой on-prem/Ollama-профиль
+```
+
+Добавление нового типа документа:
+
+```text
+config/doc_types/<type>.json
 ```
 
 Файл типа содержит:
@@ -106,12 +196,9 @@ config/doc_types/traffic_accident_appendix.json
 - `name`;
 - `aliases`;
 - `recognitionFeatures`;
-- `firstPassFields`;
-- `secondPassFields`;
+- `fields`;
 - `validationRules`;
-- `secondPass.mode`;
-- `targetSchema`;
-- `crmNaming`.
+- `outputNaming`.
 
 Код менять не нужно.
 
@@ -121,7 +208,6 @@ config/doc_types/traffic_accident_appendix.json
 npm run extract
 npm run dry-run
 npm run config:doctor
-npm run prompt:render -- --doc-type passport
 npm run test:golden
 npm run check
 npm run ui
@@ -147,6 +233,7 @@ UI умеет:
 
 - редактировать `config/config.jsonc`;
 - редактировать `config/doc_types/*.json`;
+- редактировать `config/field_mappings.json`;
 - редактировать prompt templates;
 - читать доступные компоненты из `src/components/`;
 - включать/выключать компоненты в `config.pipeline`;
@@ -157,12 +244,6 @@ UI умеет:
 - смотреть файлы из `output/` и `debug/`.
 
 Перед сохранением конфигов UI делает backup, JSON/JSONC parse, `config:doctor` и prompt preview. Запуск pipeline через UI защищён lock-ом, чтобы не было параллельных документов или LLM-запросов.
-
-В интерфейсе добавлены подсказки: что такое `required`, как работает `enabled`, где хранить production-профиль, как добавлять doc types, как собираются prompts и почему `output/`/`debug/` могут содержать ПДн.
-
-### Required
-
-`required` означает: если компонент упал, pipeline останавливается. Если `required: false`, ошибка компонента записывается в результат, но pipeline продолжает следующие шаги.
 
 ## Архитектура
 
@@ -176,6 +257,10 @@ UI умеет:
 
 См. `docs/GOLDEN_SET.md`.
 
-## Лицензия
+## Bug report
+
+См. `BUG_REPORT.md`.
+
+## License
 
 Apache-2.0.

@@ -3,252 +3,198 @@
 Дата ревью: **2026-06-18**
 
 Ревью охватывало:
-- `src/lib/llm.js`
-- `src/components/llm-universal-pass.js`
-- `src/components/llm-specific-pass.js`
-- `src/components/rasterize-first-page.js`
-- `src/orchestrator.js`
+
+- `src/lib/llm.js`;
+- `src/components/llm-universal-pass.js`;
+- `src/components/llm-specific-pass.js`;
+- `src/components/rasterize-first-page.js`;
+- `src/components/normalize-fields.js`;
+- `src/components/write-output.js`;
+- `src/orchestrator.js`;
+- `config/config.jsonc`;
+- `config/doc_types/*.json`;
+- `config/prompts/templates/*.md`.
 
 ---
 
 ## Сводная таблица
 
 | ID | Файл | Статус | Суть |
-|----|------|--------|------|
-| Б-1 | `config/config.jsonc` | 🔴 Баг | `imageEncoding` отсутствует у `local-lmstudio` → 400 Bad Request |
-| Б-2 | `rasterize-first-page.js` | 🔴 Баг | `context.document.id` вместо `document.id` → NPE |
-| Б-3 | `normalize-fields.js` | 🔴 Баг | `collectFields` — двойное присваивание ломает flatten |
-| Б-4 | `llm.js` | 🔴 Баг | `content` как массив → `parseJsonLenient` → `null` |
-| В-1 | `llm.js` | 🟡 Возможная | Порядок image/text в `content[]` |
-| В-2 | `rasterize-first-page.js` | 🟡 Возможная | `numPages` читается после `pdfDocument.cleanup()` |
-| В-3 | `llm.js` | 🟡 Возможная | MIME-тип для JPEG/других форматов |
-| В-4 | `write-output.js` | 🟡 Возможная | `selectedDocType` никогда не задаётся → `crmNaming` не работает |
-| П-1 | `llm.js` | 🔵 Тест | Таймаут не покрывает `response.json()` |
-| П-2 | `orchestrator.js` + passes | 🔵 Уточнить | Lifecycle сессии размазан |
-| П-3 | `llm.js` | 🔵 Уточнить | `shouldSendImage` без явного `case 'session'` |
-| П-4 | `orchestrator.js` | 🔵 Уточнить | `configDoctor` не проверяет дубли `step.id` |
-| П-5 | `rasterize-first-page.js` | 🔵 Уточнить | Нет guard на неподдерживаемые расширения |
-| П-6 | все компоненты | 🔵 Уточнить | `meta.input` не валидируется оркестратором |
-
-**Приоритет исправлений:** Б-1 → Б-4 → Б-3 → Б-2 → В-4, остальное по желанию.
+|---|---|---|---|
+| Б-1 | `config/config.jsonc` | ✅ Исправлен | `local-lmstudio` получил `imageEncoding: "base64-prefixed"` и `lmStudioCompat: true` |
+| Б-2 | `rasterize-first-page.js` | ✅ Устарел как блокер | Ошибка была в старом компоненте; активный MVP использует `assemble-document-pdf` |
+| Б-3 | `normalize-fields.js` | ✅ Исправлен | `collectFields` переписан без двойного присваивания |
+| Б-4 | `src/lib/llm.js` | ✅ Исправлен | `content` как массив обрабатывается через `normalizeContent()` |
+| В-1 | `src/lib/llm.js` | ✅ Исправлен | Prompt/text теперь идёт перед image |
+| В-2 | `assemble-document-pdf.js` | ✅ Исправлен в новом компоненте | Количество страниц сохраняется до cleanup |
+| В-3 | `assemble-document-pdf.js` / `src/lib/llm.js` | ✅ Частично закрыто | PDF и изображения в MVP приводятся к JPEG; MIME guard остаётся желательным для legacy-кода |
+| В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | `selectedDocType` задаётся в normalize и применяется в write-output |
+| П-1 | `src/lib/llm.js` | 🔵 Остался риск | Таймаут не покрывает `response.json()` |
+| П-2 | `orchestrator.js` + passes | 🔵 Остался риск | Lifecycle сессии размазан между оркестратором и LLM-компонентами |
+| П-3 | `src/lib/llm.js` | 🔵 Остался риск | `shouldSendImage` лучше сделать более явным |
+| П-4 | `orchestrator.js` | 🔵 Остался риск | `configDoctor` не проверяет дубли `step.id` |
+| П-5 | `assemble-document-pdf.js` | 🔵 Остался риск | Нужен более явный guard на неподдерживаемые расширения |
+| П-6 | все компоненты | 🔵 Остался риск | `meta.input` не валидируется оркестратором перед запуском |
 
 ---
 
-## 🔴 Критические баги — pipeline не работает или даёт неверный результат
+## Что исправлено в MVP-режиме
 
-### Б-1. `local-lmstudio` не имеет `imageEncoding` — отправляет `data-url`
+### 1. Удалены выдуманные типы документов
 
-**Файл:** `config/config.jsonc`
+Были удалены старые demo-типы:
 
-LM Studio с Qwen3.6 отклоняет `data:image/webp;base64,...`. Это и есть `400 Bad Request`. Дефолт в `imageToPayload` — `'data-url'`, а у профиля нет переопределения.
-
-**Фикс:**
-```jsonc
-"local-lmstudio": {
-  // ...
-  "imageEncoding": "base64-prefixed"
-}
+```text
+passport
+invoice
+marriage_certificate
+traffic_accident_appendix
 ```
 
-**Статус:** ❌ Не исправлен
+Добавлены реальные MVP-типы:
+
+```text
+egrul_extract
+vehicle_registration_certificate
+traffic_accident_participants
+```
 
 ---
 
-### Б-2. `rasterize-first-page.js` — NPE на `context.document.id`
+### 2. Активный pipeline переведён в one-pass режим
 
-**Файл:** `src/components/rasterize-first-page.js`
+Активный pipeline:
 
-```js
-const document = context.document || context.artifacts.document;
-const docId = context.document.id;  // ← всегда context.document, не document
+```text
+discover-documents
+assemble-document-pdf
+build-universal-prompt
+llm-universal-pass
+normalize-fields
+write-output
 ```
 
-Если `context.document` — `undefined`, строка с `docId` падает с `Cannot read properties of undefined`. Переменная `document` объявлена выше, но не используется для `docId`.
-
-**Фикс:** `const docId = document.id;`
-
-**Статус:** ❌ Не исправлен
+Старые компоненты оставлены, но отключены в `config/config.jsonc`.
 
 ---
 
-### Б-3. `normalize-fields.js` — двойное присваивание в `collectFields`
+### 3. Документ собирается в единый PDF
 
-**Файл:** `src/components/normalize-fields.js`
+Новый компонент:
 
-```js
-for (const [key, value] of Object.entries(raw)) {
-  if (Array.isArray(value) || (value && typeof value === 'object')) {
-    collectFields(value, target);  // рекурсия
-  } else {
-    target[key] = value;
-  }
-  target[key] = value;  // ← ВСЕГДА перезаписывает, включая объекты/массивы
-}
+```text
+src/components/assemble-document-pdf.js
 ```
 
-Последняя строка `target[key] = value` стоит вне `else` — выполняется всегда. Если `value` — вложенный объект, после рекурсивного обхода он тут же записывается как сырой объект, затирая уже разобранные вложенные поля. Рекурсивная flatten-логика ломается для любого вложенного JSON.
+Он собирает один PDF для:
 
-**Фикс:** убрать `target[key] = value` из тела цикла (за пределами `else`), либо переместить внутрь `else`.
-
-**Статус:** ❌ Не исправлен
+- одного top-level файла;
+- одной top-level папки с несколькими файлами;
+- PDF-документов;
+- PNG/JPG/WebP изображений.
 
 ---
 
-### Б-4. `llm.js` — `content` может быть массивом, `parseJsonLenient` получит `[object Object]`
+### 4. Исправлена нормализация полей
 
-**Файл:** `src/lib/llm.js`
+`normalize-fields.js` теперь:
 
-Qwen3 в ряде режимов возвращает `content` как массив `[{ type: 'text', text: '...' }, { type: 'thinking', ... }]`:
-
-```js
-const contentText = json.choices?.[0]?.message?.content;
-// если content — массив → parseJsonLenient('[object Object]') → null
-```
-
-Компонент вернёт `LLM_JSON_INVALID`.
-
-**Фикс:**
-```js
-const rawContent = json.choices?.[0]?.message?.content;
-const contentText = Array.isArray(rawContent)
-  ? rawContent.map(p => p?.text ?? '').filter(Boolean).join('\n')
-  : (rawContent ?? '');
-```
-
-**Статус:** ❌ Не исправлен
+- читает `docType` из one-pass JSON;
+- извлекает поля по техническим ключам;
+- проверяет required fields;
+- нормализует даты;
+- задаёт `selectedDocType`.
 
 ---
 
-## 🟡 Возможные баги — зависят от окружения/данных
+### 5. Исправлено именование output
 
-### В-1. Порядок `content[]` — image перед text
+`write-output.js` теперь применяет `outputNaming` из `config/doc_types/*.json`.
 
-**Файл:** `src/lib/llm.js`
+Примеры:
 
-```js
-content.push({ type: 'image_url', ... });
-content.push({ type: 'text', text: prompt });
+```text
+Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf
+СТС M57TM159.pdf
+Сведения об участниках ДТП 2024-11-16.pdf
 ```
 
-Рабочий код из другого проекта отправляет `text → image`. Некоторые версии LM Studio и Qwen чувствительны к порядку. Не воспроизводится стабильно, но может быть источником плавающих отказов.
-
-**Статус:** ❌ Не проверен
+Рядом сохраняется JSON с тем же именем.
 
 ---
 
-### В-2. `pdfDocument.numPages` читается после `cleanup()`
-
-**Файл:** `src/components/rasterize-first-page.js`
-
-```js
-page.cleanup();
-await pdfDocument.cleanup();
-// ...
-return { ..., pages: pdfDocument.numPages }  // ← после cleanup
-```
-
-По спеке pdfjs-dist, `cleanup()` освобождает ресурсы. `numPages` может быть `undefined` после этого — зависит от версии.
-
-**Фикс:** `const numPages = pdfDocument.numPages;` до `cleanup()`.
-
-**Статус:** ❌ Не исправлен
-
----
-
-### В-3. MIME-тип для не-PNG/WebP входных изображений
-
-**Файл:** `src/lib/llm.js`
-
-```js
-const ext = image.path.toLowerCase().endsWith('.png') ? 'png' : 'webp';
-```
-
-JPEG, BMP, TIFF — всё уйдёт как `data:image/webp;base64,...`. Пока входные файлы — только PDF (рендерится в webp) или изображения через Sharp — практически не воспроизводится. Но при прямой передаче JPEG в pipeline — сломается.
-
-**Фикс:** читать расширение через `path.extname` или использовать `image.format`.
-
-**Статус:** ❌ Не исправлен
-
----
-
-### В-4. `write-output.js` — `selectedDocType` никогда не кладётся в `context.artifacts`
-
-**Файл:** `src/components/write-output.js`
-
-```js
-const naming = context.artifacts.selectedDocType?.crmNaming
-  || { template: '{docType}_{createdAtDate}_{counter}' };
-```
-
-`selectedDocType` нигде не устанавливается ни одним компонентом — ни в `llm-universal-pass`, ни в `build-specific-prompt`, ни в `normalize-fields`. Всегда падает на дефолт. `crmNaming` из doc_type конфига никогда не применяется — имена файлов output всегда по шаблону-заглушке.
-
-**Статус:** ❌ Не исправлен
-
----
-
-## 🔵 Требуют уточнения / теста
+## Актуальные открытые задачи
 
 ### П-1. Таймаут не покрывает `response.json()`
 
 **Файл:** `src/lib/llm.js`
 
-`clearTimeout(timeout)` вызывается сразу после `fetch()`, до чтения тела. Ollama/LM Studio при большом ответе (dense JSON с extraction) может медленно отдавать тело — зависания без таймаута.
+`clearTimeout(timeout)` вызывается сразу после `fetch()`, до чтения тела ответа. При большом ответе может быть зависание.
 
-**Действие:** проверить на реальных документах с большим вторым проходом.
+**Действие:** перенести очистку таймера после чтения/парсинга тела ответа.
 
 ---
 
-### П-2. Lifecycle сессии размазан между оркестратором и компонентами
+### П-2. Lifecycle сессии размазан
 
-**Файлы:** `src/orchestrator.js`, `llm-universal-pass.js`, `llm-specific-pass.js`
+**Файлы:**
 
-Оркестратор создаёт сессию при `imagePolicy === 'session'` и закрывает после цикла. Компоненты создают и закрывают сессию сами, если её нет в контексте. `closeSession` сейчас — no-op, поэтому не ломается. Но если `closeSession` получит реальную логику — поведение станет непредсказуемым.
+```text
+src/orchestrator.js
+src/components/llm-universal-pass.js
+src/components/llm-specific-pass.js
+src/lib/llm.js
+```
+
+Оркестратор создаёт сессию при `imagePolicy: "session"`, но LLM-компоненты также умеют создавать свои short-lived sessions.
 
 **Действие:** определить единственного владельца сессии.
 
 ---
 
-### П-3. `shouldSendImage` — нет явного `case 'session'`
+### П-3. `shouldSendImage` лучше сделать явнее
 
 **Файл:** `src/lib/llm.js`
 
-```js
-if (policy === 'each-pass') return true;
-if (policy === 'first-pass-only') return passName === 'universal';
-return passName === 'universal'; // срабатывает и для 'session', и для неизвестных значений
-```
+Сейчас поведение для `session` и неизвестных policy похоже.
 
-Поведение для `'session'` и для опечатки в конфиге — одинаковое, без предупреждения.
-
-**Фикс:** добавить явный `case 'session':` + `console.warn` на unknown policy.
+**Действие:** добавить явный `case 'session'` и warn на unknown policy.
 
 ---
 
-### П-4. `configDoctor` не проверяет дубликаты `step.id`
+### П-4. `configDoctor` не проверяет дубли `step.id`
 
 **Файл:** `src/orchestrator.js`
 
-Два шага с одинаковым `id` не детектируются. `stage` в ошибках станет неоднозначным.
+Два шага с одинаковым `id` не детектируются.
 
-**Фикс:** добавить проверку уникальности `step.id` в `configDoctor`.
-
----
-
-### П-5. Нет guard на неподдерживаемые форматы в `rasterize-first-page`
-
-**Файл:** `src/components/rasterize-first-page.js`
-
-`.docx`, `.txt`, неизвестные расширения попадают в `copyImageFirstPage` → Sharp бросает невнятную ошибку.
-
-**Фикс:** добавить whitelist расширений и `{ ok: false }` с понятным сообщением.
+**Действие:** добавить проверку уникальности `step.id`.
 
 ---
 
-### П-6. `meta.input` не валидируется оркестратором
+### П-5. Guard на неподдерживаемые расширения
+
+**Файл:** `src/components/assemble-document-pdf.js`
+
+Сейчас поддерживаются:
+
+```text
+.pdf
+.png
+.jpg
+.jpeg
+.webp
+```
+
+**Действие:** добавить понятную ошибку для неподдерживаемых файлов внутри документа.
+
+---
+
+### П-6. `meta.input` не валидируется перед запуском
 
 **Файлы:** все компоненты + `src/orchestrator.js`
 
-Если предыдущий шаг упал и artifact отсутствует — компонент получает `undefined` и падает с нечитаемой ошибкой вместо структурированного `{ ok: false }`.
+Если предыдущий шаг упал и artifact отсутствует, следующий компонент может получить `undefined`.
 
 **Действие:** рассмотреть pre-run проверку `meta.input` против `context.artifacts`.
 
@@ -257,5 +203,6 @@ return passName === 'universal'; // срабатывает и для 'session', 
 ## История изменений
 
 | Дата | Действие |
-|------|----------|
+|---|---|
 | 2026-06-18 | Первое ревью кода, зафиксированы баги Б-1…Б-4, В-1…В-4, П-1…П-6 |
+| 2026-06-18 | MVP-режим: one-pass extraction, grouped document assembly, реальные типы документов, output naming, field mappings |

@@ -15,10 +15,36 @@ https://github.com/AlexanderKuzikov/DocuMind
 Текущий статус:
 
 ```text
-MVP foundation / demo-ready
+MVP one-pass extraction / demo-ready
 ```
 
-Это уже рабочая основа, но ещё не production-complete система.
+Это рабочая предварительная версия, но ещё не production-complete система.
+
+---
+
+## Текущий активный режим
+
+Активный режим:
+
+```text
+input/
+  → discover-documents
+  → assemble-document-pdf
+  → build-universal-prompt
+  → llm-universal-pass
+  → normalize-fields
+  → write-output
+  → output/<имя>.pdf
+  → output/<имя>.json
+```
+
+Старый двухпроходный pipeline не удалён. Он оставлен в `src/components/` и может быть включён позже через config/UI:
+
+```text
+rasterize-first-page
+build-specific-prompt
+llm-specific-pass
+```
 
 ---
 
@@ -31,274 +57,104 @@ MVP foundation / demo-ready
 - orchestrator `src/orchestrator.js`;
 - компонентная архитектура в `src/components/`;
 - config-driven pipeline через `config/config.jsonc`;
-- типы документов в `config/doc_types/*.json`;
+- реальные типы документов в `config/doc_types/*.json`;
 - prompt templates в `config/prompts/templates/*.md`;
 - LLM client в `src/lib/llm.js`;
-- rasterization первой страницы PDF/изображения;
-- universal pass;
-- wide legal extraction second pass;
-- session-based image policy;
+- сборка документа в единый PDF через `assemble-document-pdf.js`;
+- one-pass docType detection и field extraction;
 - базовая нормализация;
-- output writer;
+- output writer с переименованием PDF/JSON;
 - debug artifacts;
 - `config:doctor` с проверкой paths, prompt templates, components, LLM profile и hard rules;
 - `dry-run`;
 - alias lookup для doc types;
 - golden runner;
-- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET;
+- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET, BUG_REPORT;
 - локальный browser UI через `npm run ui`;
-- UI save guard: backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback.
-
-Текущий pipeline:
-
-```text
-discover-documents
-  ↓
-rasterize-first-page
-  ↓
-build-universal-prompt
-  ↓
-llm-universal-pass
-  ↓
-build-specific-prompt
-  ↓
-llm-specific-pass
-  ↓
-normalize-fields
-  ↓
-write-output
-```
+- UI save guard: backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback;
+- вкладка Field Mappings в UI.
 
 ---
 
-## Что планируем делать
+## Активные типы документов
 
-Ближайшие цели:
+Сейчас в MVP зарегистрированы только реальные типы:
 
-1. Исправить баги из ревью (см. `BUG_REPORT.md`), начиная с Б-1 → Б-4 → Б-3 → Б-2 → В-4.
-2. Добавить реальные golden set fixtures.
-3. Улучшить нормализацию:
-   - ФИО;
-   - адреса;
-   - даты;
-   - суммы;
-   - реквизиты;
-   - номера документов;
-   - VIN;
-   - ОСАГО;
-   - водительские удостоверения.
-4. Улучшить human-readable error reporting.
-5. Проверить session behavior на RouterAI/LM Studio/Ollama.
-6. Уточнить CRM mapping по реальным документам.
-7. Добавить больше doc types через `config/doc_types/*.json`.
-8. Добавить CI/quality gates.
+| Technical key | Название | Обязательные поля |
+|---|---|---|
+| `egrul_extract` | Выписка из ЕГРЮЛ | `ogrn`, `registration_record_date`, `short_name_ru` |
+| `vehicle_registration_certificate` | Свидетельство о регистрации ТС | `vin`, `vehicle_number` |
+| `traffic_accident_participants` | Сведения об участниках ДТП | `accident_location`, `accident_date` |
+
+Входящие имена файлов не используются для:
+
+- определения типа документа;
+- извлечения полей;
+- именования результата.
+
+Тип документа определяется по содержанию.
 
 ---
 
-## Известные проблемы (актуально на 2026-06-18)
+## Важные правила извлечения
 
-По итогам ревью кода зафиксированы баги и риски. Полный список — в `BUG_REPORT.md`.
+### Выписка из ЕГРЮЛ
 
-**Критические (🔴 — pipeline не работает или даёт неверный результат):**
-
-- **Б-1** — `local-lmstudio` не имеет `imageEncoding: "base64-prefixed"` → LM Studio с Qwen3.6 отклоняет запрос (400 Bad Request). Приоритет #1.
-- **Б-2** — `rasterize-first-page.js`: `context.document.id` вместо `document.id` → NPE если `context.document` undefined.
-- **Б-3** — `normalize-fields.js`: двойное присваивание `target[key] = value` вне `else` → рекурсивный flatten ломается для вложенных объектов.
-- **Б-4** — `llm.js`: Qwen3 может возвращать `content` как массив `[{ type: 'text', ... }]` → `parseJsonLenient` получает `[object Object]` → всегда `null`.
-
-**Возможные (🟡 — зависят от данных/окружения):**
-
-- **В-1** — порядок `image → text` в `content[]`, некоторые провайдеры чувствительны.
-- **В-2** — `pdfDocument.numPages` читается после `cleanup()`.
-- **В-3** — MIME-тип для JPEG/BMP передаётся как `image/webp`.
-- **В-4** — `selectedDocType` никогда не кладётся в `context.artifacts` → `crmNaming` из doc_type конфига не применяется.
-
-**Требуют уточнения/теста (🔵):**
-
-- **П-1** — таймаут не покрывает `response.json()`, возможен зависон на большом ответе.
-- **П-2** — lifecycle сессии размазан между оркестратором и компонентами.
-- **П-3** — `shouldSendImage` нет явного `case 'session'`.
-- **П-4** — `configDoctor` не проверяет дубли `step.id`.
-- **П-5** — нет guard на неподдерживаемые расширения файлов.
-- **П-6** — `meta.input` компонентов не валидируется оркестратором перед запуском.
-
----
-
-## Ключевые договоренности
-
-### 1. Компоненты — отдельными файлами
-
-Это принципиально.
-
-Каждый компонент лежит в:
+Поля:
 
 ```text
-src/components/
+ogrn
+registration_record_date
+short_name_ru
 ```
 
-Компоненты не должны напрямую импортировать друг друга. Они работают через общий `context`.
-
-Оркестратор знает порядок pipeline.
-
-### 1.1. Required
-
-`required: true` означает: если компонент упал, pipeline останавливается на этом документе.
-
-`required: false` означает: ошибка компонента сохраняется в результат, но pipeline продолжает следующие шаги.
-
-Это нужно для экспериментальных/опциональных компонентов:
+Важно:
 
 ```text
-rotate-image
-quality-check
-llm-normalize
+registration_record_date — это дата внесения записи в ЕГРЮЛ, а не дата выписки.
 ```
 
-Они могут быть выключены или optional, чтобы быстро проверять гипотезы без поломки всего pipeline.
-
-### 2. `concurrency: 1`
-
-Это жёсткое архитектурное правило.
-
-Обработка документов строго последовательная:
-
-```js
-for (const doc of documents) {
-  await processDocument(doc);
-}
-```
-
-`runPipeline()` и UI `/api/actions/extract` используют lock: если запуск уже идёт, следующий становится в очередь.
-
-Не использовать `Promise.all()` для документов или LLM-запросов.
-
-### 3. Типы документов не хардкодятся в коде
-
-Новый тип документа добавляется одним файлом:
+Имя файла:
 
 ```text
-config/doc_types/<type>.json
+Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}
 ```
 
-Файл должен описывать `type`, `name`, `aliases`, `recognitionFeatures`, `firstPassFields`, `secondPassFields`, `validationRules`, `secondPass.mode`, `targetSchema`, `crmNaming`.
+### Свидетельство о регистрации ТС
 
-Код менять не нужно.
-
-### 4. JSON стремится к строгости
-
-JSON-схемы и тяжёлые валидаторы пока не добавляем.
-
-Пока достаточно:
-
-- аккуратной структуры;
-- `config:doctor`;
-- минимального runtime-check;
-- будущей LLM-валидации новых типов.
-
-### 5. Промпты динамические
-
-Не замораживаем prompt text в коде.
-
-Промпты собираются из:
+Поля:
 
 ```text
-config/config.jsonc
-config/doc_types/*.json
-config/prompts/templates/*.md
+vin
+vehicle_number
 ```
 
-`universal.md` получает список доступных типов через `{{allowedDocTypes}}`, поэтому типы документов не нужно хардкодить в prompt template.
-
-Но для каждого запуска сохраняем rendered prompts в debug artifacts.
-
-### 6. Изображение отправляется один раз
-
-Текущая договоренность:
+Имя файла:
 
 ```text
-Pass 1: image + universal prompt
-Pass 2: previous result + wide legal extraction prompt
+СТС {vehicle_number}
 ```
 
-Второй запрос идёт в той же LLM-сессии без повторной отправки картинки.
+### Сведения об участниках ДТП
 
-Конфиг:
-
-```json
-{
-  "llm": {
-    "imagePolicy": "session",
-    "sessionFallback": "each-pass"
-  }
-}
-```
-
-Если провайдер не держит session, fallback — `each-pass`.
-
-### 7. Второй проход — широкий legal extraction
-
-Второй prompt не должен быть узким schema-only запросом.
-
-Цель второго прохода:
+Поля:
 
 ```text
-Извлеки все данные, которые могут быть использованы в юридическом рассмотрении этого документа.
-Выведи в виде JSON. Больше ничего не пиши.
+accident_location
+accident_date
 ```
 
-Потом `normalize-fields` приводит результат к CRM/legal-схеме.
-
-### 8. Unknown docType — нормальный сценарий
-
-Если первый проход не определил тип:
+Важно:
 
 ```text
-unknown
+accident_location понимается как "Место ДТП", потому что это может быть адрес, трасса, участок дороги или иной ориентир.
 ```
 
-не останавливаемся.
-
-Запускаем generic legal extraction и сохраняем output со статусом `unknown` или `partial`.
-
-### 9. LLM не должна додумывать
-
-В prompt и нормализации важно правило:
+Имя файла:
 
 ```text
-Не выдумывай отсутствующие значения.
-Если значение не найдено или сомнительно — null.
+Сведения об участниках ДТП {accident_date}
 ```
-
-### 10. Ошибки должны быть честными
-
-Пользователь должен видеть:
-
-```text
-что произошло;
-на каком этапе;
-насколько это критично;
-вероятные причины;
-что можно сделать дальше.
-```
-
-Raw stack trace — только в debug/log.
-
-### 11. Production data policy
-
-Реальные юридические документы с персональными данными не отправляются во внешние LLM-сервисы.
-
-Cloud-профили, включая RouterAI, разрешены только для:
-
-```text
-dev
-sandbox
-синтетических документов
-обезличенных fixtures
-```
-
-Production-режим должен работать локально/on-prem через Ollama.
-
-Debug/input/output/staging/golden-репорты могут содержать ПДн и должны оставаться локальными, не коммититься и не отправляться наружу.
 
 ---
 
@@ -312,9 +168,7 @@ config/config.jsonc
 
 Это JSONC, поэтому комментарии разрешены.
 
-Секреты в конфиг не кладём.
-
-Ключи берём из env:
+Секреты в конфиг не кладём. Ключи берём из env:
 
 ```env
 ROUTERAI_API_KEY=
@@ -322,11 +176,29 @@ LOCAL_LLM_API_KEY=
 INTERNAL_LLM_API_KEY=
 ```
 
+Field mappings:
+
+```text
+config/field_mappings.json
+```
+
+Prompt templates:
+
+```text
+config/prompts/templates/*.md
+```
+
+Doc types:
+
+```text
+config/doc_types/*.json
+```
+
 ---
 
 ## LLM profiles
 
-Текущий активный профиль для экспериментов:
+Текущий активный профиль для быстрых тестов:
 
 ```json
 {
@@ -341,11 +213,11 @@ LM Studio profile:
   "baseUrl": "http://127.0.0.1:1234/v1",
   "model": "qwen3.6:35b-a3b",
   "apiKeyEnv": null,
+  "imageEncoding": "base64-prefixed",
+  "lmStudioCompat": true,
   "timeout": 300000
 }
 ```
-
-> ⚠️ **Баг Б-1 (ещё не исправлен):** у профиля `local-lmstudio` отсутствует `"imageEncoding": "base64-prefixed"`. LM Studio с Qwen3.6 отклоняет дефолтный `data-url` формат с ошибкой 400. Без этого фикса pipeline не работает.
 
 LM Studio в OpenAI-compatible режиме не требует API key.
 
@@ -355,13 +227,6 @@ RouterAI:
 
 ```text
 mvp-routerai
-local-lmstudio
-prod-ollama
-```
-
-MVP:
-
-```text
 RouterAI.ru
 qwen/qwen3.6-35b-a3b
 imageEncoding: base64-prefixed
@@ -370,7 +235,8 @@ imageEncoding: base64-prefixed
 Production target:
 
 ```text
-Linux
+prod-ollama
+Linux/on-prem office server
 Ollama
 qwen3.6:35b-a3b
 ```
@@ -407,6 +273,7 @@ UI — это локальный dev-инструмент, не production admin
 
 - редактировать `config/config.jsonc`;
 - редактировать `config/doc_types/*.json`;
+- редактировать `config/field_mappings.json`;
 - редактировать prompt templates;
 - сканировать `src/components/*.js`;
 - читать `meta` компонентов;
@@ -438,9 +305,14 @@ UI — это локальный dev-инструмент, не production admin
 
 ## Output
 
-Финальный output должен быть JSON в `output/`.
+Финальный output:
 
-Ожидаемая структура:
+```text
+output/<имя>.pdf
+output/<имя>.json
+```
+
+JSON должен содержать:
 
 ```json
 {
@@ -448,16 +320,16 @@ UI — это локальный dev-инструмент, не production admin
   "docType": "...",
   "docTypeName": "...",
   "status": "ok | partial | failed | unknown",
-  "source": {},
-  "firstPass": {},
-  "rawExtracted": {},
+  "pdfFileName": "...",
+  "jsonFileName": "...",
   "fields": {},
-  "normalizedFields": {},
   "validation": {},
-  "crm": {},
+  "source": {},
   "createdAt": "..."
 }
 ```
+
+Runtime-результаты `output/` игнорируются git через `.gitignore`, потому что могут содержать ПДн.
 
 ---
 
@@ -469,14 +341,21 @@ Debug artifacts сохраняются в:
 debug/<docId>/
 ```
 
-Содержимое:
+Содержимое для активного one-pass режима:
+
+```text
+one-pass.prompt.md
+one-pass.response.json
+output.json
+```
+
+Legacy debug artifacts могут сохраняться от старого pipeline:
 
 ```text
 universal.prompt.md
 universal.response.json
 specific.prompt.md
 specific.response.json
-output.json
 ```
 
 Debug можно отключать через `config/config.jsonc`.
@@ -487,225 +366,90 @@ Debug можно отключать через `config/config.jsonc`.
 
 Golden set — отдельный тестовый слой.
 
-Структура:
+Структура должна быть такой:
 
 ```text
 golden/
-  passport/
-    passport-001/
+  egrul_extract/
+    egrul_extract-001/
+      input/
+        document.pdf
+      expected.json
+      config.json
+
+  vehicle_registration_certificate/
+    vehicle_registration_certificate-001/
+      input/
+        document.pdf
+      expected.json
+      config.json
+
+  traffic_accident_participants/
+    traffic_accident_participants-001/
       input/
         document.pdf
       expected.json
       config.json
 ```
 
-Цель:
-
-```text
-проверять, не деградировал ли результат после изменений prompt/config/model.
-```
-
-Сейчас golden runner есть, но fixtures ещё нужно добавить.
+Текущий статус: runner есть, fixtures пока не добавлены.
 
 ---
 
-## Команды
+## Known issues / risks
+
+### Fixed in current MVP
+
+- Б-1: `local-lmstudio` получил `imageEncoding: "base64-prefixed"`.
+- Б-3: `normalize-fields` исправлен.
+- Б-4: `llm.js` нормально обрабатывает `content` как массив.
+- В-1: prompt/text идёт перед image.
+- В-4: `selectedDocType` задаётся и применяется для output naming.
+- Выдуманные типы документов удалены.
+- Активный pipeline переведён в one-pass режим.
+- Добавлена сборка документа в единый PDF.
+- Добавлены реальные output naming templates.
+
+### Still open
+
+- Нет полноценного golden set на реальных документах.
+- RouterAI-профиль ещё нужно проверить на реальных документах.
+- Ollama office server ещё нужно проверить.
+- Таймаут в `llm.js` не покрывает `response.json()`.
+- Lifecycle сессии размазан между orchestrator и LLM components.
+- `shouldSendImage` лучше сделать более явным.
+- `configDoctor` не проверяет дубликаты `step.id`.
+- Нужен более явный guard на неподдерживаемые расширения файлов.
+- `meta.input` компонентов не валидируется оркестратором перед запуском.
+
+---
+
+## Production data policy
+
+Реальные юридические документы с персональными данными не отправляются во внешние LLM-сервисы.
+
+Cloud-профили, включая RouterAI, разрешены только для:
+
+```text
+dev
+sandbox
+синтетических документов
+обезличенных fixtures
+```
+
+Production-режим должен работать локально/on-prem через Ollama.
+
+Debug/input/output/staging/golden-репорты могут содержать ПДн и должны оставаться локальными, не коммититься и не отправляться наружу.
+
+---
+
+## Useful commands
 
 ```bash
-npm install
 npm run check
 npm run config:doctor
 npm run dry-run
 npm run extract
-npm run prompt:render -- --doc-type passport
+npm run ui
 npm run test:golden
-```
-
----
-
-## Что не обещаем на текущей стадии
-
-Не обещаем:
-
-- 100% точность;
-- production-complete систему;
-- поддержку всех типов документов;
-- полноценный production UI;
-- полноценный CRM mapping;
-- enterprise-grade CI/CD;
-- обработку всех edge cases.
-
----
-
-## Стиль работы
-
-- Минимальный scope.
-- Сначала MVP, потом усложнения.
-- Не уходить в overengineering.
-- Честно фиксировать ограничения.
-- Не хардкодить секреты.
-- Не сохранять API keys в конфиге.
-- Не менять архитектурные договоренности без причины.
-
----
-
-## Дневник разработки
-
-### 2026-06-17 — MVP foundation
-
-Создан базовый Node.js проект:
-
-- `package.json`;
-- `package-lock.json`;
-- `src/cli.js`;
-- `src/orchestrator.js`;
-- `src/components/`;
-- `src/lib/`;
-- `config/config.jsonc`;
-- `config/doc_types/*.json`;
-- `config/prompts/templates/*.md`;
-- `src/test/golden-runner.js`;
-- `README.md`;
-- `CONTEXT.md`;
-- `docs/ARCHITECTURE.md`;
-- `docs/PROMPTS.md`;
-- `docs/GOLDEN_SET.md`.
-
-Добавлен минимальный pipeline:
-
-```text
-discover-documents
-rasterize-first-page
-build-universal-prompt
-llm-universal-pass
-build-specific-prompt
-llm-specific-pass
-normalize-fields
-write-output
-```
-
-Commit:
-
-```text
-456c0b4 — Add DocuMind MVP orchestrator and project scaffolding
-```
-
-### 2026-06-17 — CONTEXT как onboarding для LLM
-
-`CONTEXT.md` переписан как файл быстрого погружения новой LLM/агента в проект.
-
-Добавлены:
-
-- цель проекта;
-- что уже сделано;
-- что планируем делать;
-- ключевые архитектурные договоренности;
-- `concurrency: 1`;
-- component-based pipeline;
-- dynamic prompts;
-- session-based image policy;
-- free legal extraction second pass;
-- unknown docType handling;
-- data policy для ПДн;
-- config/profiles;
-- output/debug/golden set;
-- ограничения текущей стадии.
-
-Commit:
-
-```text
-3695292 — Improve README badges and CONTEXT onboarding
-```
-
-### 2026-06-17 — Local browser config UI
-
-Добавлен локальный browser UI:
-
-- `src/ui-server.js`;
-- `ui/index.html`;
-- `ui/app.js`;
-- `ui/style.css`;
-- `npm run ui`.
-
-UI стартует на:
-
-```text
-http://127.0.0.1:4173
-```
-
-Порт `3000` специально не используется. Если `4173` занят, сервер перебирает `4174–4183`.
-
-Commit:
-
-```text
-0999f19 — Add local browser config UI
-```
-
-### 2026-06-17 — UI styling pass
-
-Обновлен `ui/style.css` и исправлен относительный путь к CSS в `ui/index.html`.
-
-Commit: UI styling pass.
-
-### 2026-06-17 — UI hints and instructions
-
-В UI добавлены подсказки на каждой вкладке.
-
-### 2026-06-17 — UI static path fix
-
-Исправлен баг на Windows/MSYS при запуске UI через `npm run ui`.
-
-Причина: `path.resolve()` получал путь `/style.css` и интерпретировал его от корня диска.
-
-Исправление:
-
-```text
-relativePath.replace(/^[/\\]+/, '')
-```
-
-### 2026-06-17 — UI module script fix
-
-`ui/app.js` использует top-level `await`, поэтому подключение исправлено:
-
-```html
-<script type="module" src="app.js"></script>
-```
-
-### 2026-06-17 — LM Studio local profile
-
-В `config/config.jsonc` установлен активный профиль `local-lmstudio`:
-
-```text
-baseUrl: http://127.0.0.1:1234/v1
-model: qwen3.6:35b-a3b
-apiKeyEnv: null
-```
-
-### 2026-06-17 — Production data policy
-
-Зафиксировано правило: реальные юридические документы с ПДн не отправляются во внешние LLM-сервисы.
-
-### 2026-06-18 — Code review: выявлены баги и риски
-
-Проведено ревью пяти ключевых файлов:
-
-- `src/lib/llm.js`;
-- `src/components/llm-universal-pass.js`;
-- `src/components/llm-specific-pass.js`;
-- `src/components/rasterize-first-page.js`;
-- `src/orchestrator.js`.
-
-Выявлено 4 критических бага, 4 возможных, 6 требующих уточнения.
-
-Полный список с фиксами — в `BUG_REPORT.md`.
-
-Приоритет исправления: **Б-1 → Б-4 → Б-3 → Б-2 → В-4**.
-
-Следующий шаг после исправления багов:
-
-```text
-взять 3 вида документов по 6–10 примеров
-создать первые golden fixtures
-прогнать pipeline
-уточнить prompts/doc_types/normalization
 ```
