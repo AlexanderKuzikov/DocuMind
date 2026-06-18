@@ -166,12 +166,13 @@ export class LlmClient {
         budget_tokens: this.config.llm.thinking.budgetTokens ?? 4096
       };
     } else {
-      // budget_tokens: 0 is the most reliable way to suppress thinking
-      // on routers/proxies that may ignore chat_template_kwargs.
-      body.thinking = {
-        type: 'disabled',
-        budget_tokens: 0
-      };
+      // Three-layer suppression for routers/proxies (e.g. RouterAI/AtlasCloud)
+      // that ignore chat_template_kwargs:
+      // 1. thinking.type=disabled — Anthropic-style
+      // 2. budget_tokens=0 — vLLM/Ollama style
+      // 3. reasoning_effort=none — OpenRouter/OpenAI-o-series style
+      body.thinking = { type: 'disabled', budget_tokens: 0 };
+      body.reasoning_effort = 'none';
     }
 
     const timeoutMs = profile.timeout || this.config.llm.timeout || 180000;
