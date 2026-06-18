@@ -2,9 +2,7 @@
 node_modules/
 
 # Runtime data
-input/
 staging/
-output/
 debug/
 golden-reports/
 logs/
