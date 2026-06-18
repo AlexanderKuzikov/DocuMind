@@ -30,9 +30,9 @@
     "activeProfile": "mvp-routerai",
     "imagePolicy": "session",
     "sessionFallback": "each-pass",
-    "forceTemperature": 0.1,
+    "forceTemperature": 0,
     "disableThinking": true,
-    "temperature": 0.1,
+    "temperature": 0,
     "thinking": {
       "enabled": false,
       "effort": "medium"
