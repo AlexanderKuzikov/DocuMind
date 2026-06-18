@@ -26,11 +26,10 @@ Expected fields:
 {
   "docType": "egrul_extract",
   "status": "ok",
-  "fields": {
-    "ogrn": "1045900353443",
-    "registration_record_date": "YYYY-MM-DD",
-    "short_name_ru": "ООО \"...\""
-  }
+  "confidence": 0.98,
+  "ogrn": "1045900353443",
+  "registration_record_date": "YYYY-MM-DD",
+  "short_name_ru": "ООО \"...\""
 }
 ```
 
@@ -60,10 +59,9 @@ Expected fields:
 {
   "docType": "vehicle_registration_certificate",
   "status": "ok",
-  "fields": {
-    "vin": "X7L4SRLVA64034752",
-    "vehicle_number": "M57TM159"
-  }
+  "confidence": 0.95,
+  "vin": "X7L4SRLVA64034752",
+  "vehicle_number": "M57TM159"
 }
 ```
 
@@ -87,10 +85,9 @@ Expected fields:
 {
   "docType": "traffic_accident_participants",
   "status": "ok",
-  "fields": {
-    "accident_location": "...",
-    "accident_date": "YYYY-MM-DD"
-  }
+  "confidence": 0.95,
+  "accident_location": "...",
+  "accident_date": "YYYY-MM-DD"
 }
 ```
 
@@ -140,11 +137,10 @@ A golden expected file should compare at least:
 {
   "docType": "egrul_extract",
   "status": "ok",
-  "fields": {
-    "ogrn": "1045900353443",
-    "registration_record_date": "2025-12-10",
-    "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
-  }
+  "confidence": 0.98,
+  "ogrn": "1045900353443",
+  "registration_record_date": "2025-12-10",
+  "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
 }
 ```
 
@@ -161,7 +157,7 @@ Golden tests should answer:
 ## Future work
 
 - add real fixtures for the three active MVP types;
-- compare `fields`, `docType`, `status`, and `pdfFileName`;
+- compare `docType`, `status`, `confidence`, document fields, `pdfFileName`, and `jsonFileName`;
 - save detailed diffs;
 - run golden tests manually before changing prompts or models;
 - add separate fixtures for PDFs, images, and grouped folder documents;

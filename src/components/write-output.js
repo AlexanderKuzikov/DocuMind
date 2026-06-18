@@ -59,11 +59,12 @@ export async function run(context) {
   await fs.mkdir(outputDir, { recursive: true });
 
   const doc = context.artifacts.finalDocument;
-  const naming = doc.selectedDocType?.outputNaming || doc.selectedDocType?.crmNaming || { template: '{docType}_{createdAtDate}_{counter}' };
+  const naming = doc.outputNaming || doc.selectedDocType?.outputNaming || doc.selectedDocType?.crmNaming || { template: '{docType}_{createdAtDate}_{counter}' };
   const values = {
     docType: doc.docType,
     docTypeName: doc.docTypeName,
     createdAtDate: new Date().toISOString().slice(0, 10),
+    ...doc,
     ...(doc.fields || {}),
     ...(doc.crm || {})
   };
@@ -88,12 +89,11 @@ export async function run(context) {
 
   await fs.copyFile(context.artifacts.assembledPdf.path, pdfPath);
 
+  const { outputNaming: _outputNaming, ...docWithoutInternal } = doc;
   const jsonDoc = {
-    ...doc,
+    ...docWithoutInternal,
     pdfFileName: path.basename(pdfPath),
-    jsonFileName: path.basename(jsonPath),
-    outputPdfPath: pdfPath,
-    outputJsonPath: jsonPath
+    jsonFileName: path.basename(jsonPath)
   };
 
   await fs.writeFile(jsonPath, stableStringify(jsonDoc));

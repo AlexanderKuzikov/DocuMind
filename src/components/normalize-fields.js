@@ -150,26 +150,9 @@ export async function run(context) {
     docType,
     docTypeName: docTypeConfig?.name || 'Unknown document type',
     status: errors.length ? 'partial' : 'ok',
-    selectedDocType: docTypeConfig || null,
-    source: {
-      inputPath: context.document.path,
-      inputFiles: context.document.files || [],
-      sourceKind: context.document.sourceKind || null,
-      assembledPdfPath: context.artifacts.assembledPdf?.path || null,
-      imagePath: context.artifacts.image?.path || null
-    },
-    firstPass,
-    rawExtracted,
-    fields: typedFields,
-    validation: {
-      ok: errors.length === 0,
-      errors
-    },
-    crm: {
-      documentType: docType,
-      documentNumber: typedFields.document_number || typedFields.number || (typedFields.series && typedFields.number ? `${typedFields.series}${typedFields.number}` : null) || typedFields.invoice_number || typedFields.record_number || null,
-      documentDate: typedFields.document_date || typedFields.accident_date || typedFields.registration_record_date || typedFields.invoice_date || typedFields.marriage_date || typedFields.birth_date || null
-    },
+    confidence: firstPass.confidence ?? rawExtracted.confidence ?? null,
+    outputNaming: docTypeConfig?.outputNaming || null,
+    ...typedFields,
     createdAt: new Date().toISOString()
   };
 

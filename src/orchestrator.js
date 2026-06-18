@@ -6,16 +6,11 @@ import { scanDocTypes, findDocType } from './doc-type-registry.js';
 import { LlmClient } from './lib/llm.js';
 import { statusFromErrors } from './lib/error-reporter.js';
 import { projectRoot } from './lib/paths.js';
+import { makeDocId } from './lib/doc-id.js';
 
 async function loadComponent(componentPath) {
   const module = await import(`${pathToFileURL(componentPath).href}?t=${Date.now()}`);
   return module;
-}
-
-function makeDocId(document) {
-  const base = path.basename(document.name, path.extname(document.name));
-  const safe = base.normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '').toLowerCase() || 'document';
-  return `${safe}_${Date.now()}`;
 }
 
 /**
@@ -119,11 +114,12 @@ export async function runPipeline(options = {}) {
     const counters = { output: 1 };
 
     for (const document of documents) {
+      const documentId = await makeDocId(document);
       const context = {
         config,
         paths,
         docTypes,
-        document: { ...document, id: makeDocId(document) },
+        document: { ...document, id: documentId },
         artifacts: {},
         llm,
         counters,

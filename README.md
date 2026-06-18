@@ -84,22 +84,30 @@ input/
 
 ## JSON output
 
-Каждый JSON содержит минимум:
+Каждый JSON — плоский, без debug/internal-полей.
 
 ```json
 {
-  "docId": "...",
-  "docType": "egrul_extract",
-  "docTypeName": "Выписка из ЕГРЮЛ",
+  "docId": "dm-20260618113637-7a8f5289ed28-7263",
+  "docType": "vehicle_registration_certificate",
+  "docTypeName": "Свидетельство о регистрации ТС",
   "status": "ok",
-  "pdfFileName": "Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf",
-  "fields": {
-    "ogrn": "1045900353443",
-    "registration_record_date": "2025-12-10",
-    "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
-  }
+  "confidence": 0.95,
+  "vin": "X7L4SRLVA64034752",
+  "vehicle_number": "M57TM159",
+  "createdAt": "2026-06-18T11:36:47.504Z",
+  "pdfFileName": "СТС M57TM159.pdf",
+  "jsonFileName": "СТС M57TM159.json"
 }
 ```
+
+`docId` имеет формат:
+
+```text
+dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>
+```
+
+Он не строится из имени входящего файла. Hash считается по содержимому файлов документа, а `run-suffix` делает ID уникальным даже при повторной обработке одного и того же документа.
 
 ## Статус
 
@@ -152,8 +160,6 @@ npm run extract
 ```
 
 Результаты будут в `output/`, отладочные артефакты — в `debug/`.
-
-Runtime-результаты `output/` игнорируются git, чтобы не коммитить документы и ПДн.
 
 ## Конфигурация
 

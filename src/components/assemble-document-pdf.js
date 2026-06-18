@@ -178,6 +178,8 @@ function buildPdf(objects) {
 async function assemblePdf(pages, outputPath) {
   const objects = await Promise.all(pages.map(async (page) => ({
     ...page,
+    width: Math.round(page.width),
+    height: Math.round(page.height),
     buffer: await fs.readFile(page.path)
   })));
   const pdfBuffer = buildPdf(objects);

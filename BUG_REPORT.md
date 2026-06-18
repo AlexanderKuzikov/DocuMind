@@ -28,7 +28,9 @@
 | В-1 | `src/lib/llm.js` | ✅ Исправлен | Prompt/text теперь идёт перед image |
 | В-2 | `assemble-document-pdf.js` | ✅ Исправлен в новом компоненте | Количество страниц сохраняется до cleanup |
 | В-3 | `assemble-document-pdf.js` / `src/lib/llm.js` | ✅ Частично закрыто | PDF и изображения в MVP приводятся к JPEG; MIME guard остаётся желательным для legacy-кода |
-| В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | `selectedDocType` задаётся в normalize и применяется в write-output |
+| В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | Итоговый JSON плоский; `outputNaming` используется только внутренне для имени файла |
+| П-7 | `src/orchestrator.js` | ✅ Исправлен | `docId` больше не строится из имени входящего файла |
+| П-8 | `assemble-document-pdf.js` | ✅ Исправлен | Image `Width`/`Height` округляются до целых PDF units |
 | П-1 | `src/lib/llm.js` | 🔵 Остался риск | Таймаут не покрывает `response.json()` |
 | П-2 | `orchestrator.js` + passes | 🔵 Остался риск | Lifecycle сессии размазан между оркестратором и LLM-компонентами |
 | П-3 | `src/lib/llm.js` | 🔵 Остался риск | `shouldSendImage` лучше сделать более явным |
@@ -103,7 +105,8 @@ src/components/assemble-document-pdf.js
 - извлекает поля по техническим ключам;
 - проверяет required fields;
 - нормализует даты;
-- задаёт `selectedDocType`.
+- сохраняет `confidence`;
+- держит `outputNaming` как внутренний hint для имени файла.
 
 ---
 
@@ -120,6 +123,54 @@ src/components/assemble-document-pdf.js
 ```
 
 Рядом сохраняется JSON с тем же именем.
+
+---
+
+### 6. Итоговый JSON очищен
+
+`normalize-fields.js` теперь готовит плоский документ без debug/internal-полей:
+
+```text
+selectedDocType
+source
+firstPass
+rawExtracted
+validation
+crm
+outputPdfPath
+outputJsonPath
+outputNaming
+```
+
+Итоговый JSON содержит только служебные поля, confidence, поля документа верхним уровнем, `createdAt`, `pdfFileName` и `jsonFileName`.
+
+---
+
+### 7. `docId` больше не зависит от имени файла
+
+`src/orchestrator.js` использует `src/lib/doc-id.js`.
+
+Формат:
+
+```text
+dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>
+```
+
+Hash считается по содержимому файлов документа, а не по входящему имени файла. `run-suffix` делает ID уникальным при повторной обработке одного и того же документа.
+
+---
+
+### 8. PDF image dimensions исправлены
+
+`assemble-document-pdf.js` округлял `Width`/`Height` страниц и JPEG XObject до целых чисел. Дробные размеры могли приводить к пустым страницам в PDF viewer/pdfjs.
+
+Проверка после исправления:
+
+```text
+Width/Height целые
+/Im0 Do присутствует
+страница рендерится с непустыми пикселями
+```
 
 ---
 
@@ -206,3 +257,4 @@ src/lib/llm.js
 |---|---|
 | 2026-06-18 | Первое ревью кода, зафиксированы баги Б-1…Б-4, В-1…В-4, П-1…П-6 |
 | 2026-06-18 | MVP-режим: one-pass extraction, grouped document assembly, реальные типы документов, output naming, field mappings |
+| 2026-06-18 | Исправлены пустые PDF, плоский итоговый JSON, `docId` без зависимости от имени файла |

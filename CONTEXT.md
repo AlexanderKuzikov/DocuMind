@@ -312,24 +312,30 @@ output/<имя>.pdf
 output/<имя>.json
 ```
 
-JSON должен содержать:
+JSON должен быть плоским, без debug/internal-полей:
 
 ```json
 {
-  "docId": "...",
-  "docType": "...",
-  "docTypeName": "...",
-  "status": "ok | partial | failed | unknown",
-  "pdfFileName": "...",
-  "jsonFileName": "...",
-  "fields": {},
-  "validation": {},
-  "source": {},
-  "createdAt": "..."
+  "docId": "dm-20260618113637-7a8f5289ed28-7263",
+  "docType": "vehicle_registration_certificate",
+  "docTypeName": "Свидетельство о регистрации ТС",
+  "status": "ok",
+  "confidence": 0.95,
+  "vin": "X7L4SRLVA64034752",
+  "vehicle_number": "M57TM159",
+  "createdAt": "2026-06-18T11:36:47.504Z",
+  "pdfFileName": "СТС M57TM159.pdf",
+  "jsonFileName": "СТС M57TM159.json"
 }
 ```
 
-Runtime-результаты `output/` игнорируются git через `.gitignore`, потому что могут содержать ПДн.
+`docId` формируется как:
+
+```text
+dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>
+```
+
+Он не зависит от имени входящего файла.
 
 ---
 
@@ -404,10 +410,13 @@ golden/
 - Б-3: `normalize-fields` исправлен.
 - Б-4: `llm.js` нормально обрабатывает `content` как массив.
 - В-1: prompt/text идёт перед image.
-- В-4: `selectedDocType` задаётся и применяется для output naming.
+- В-4: output naming больше не зависит от `selectedDocType` в итоговом JSON.
 - Выдуманные типы документов удалены.
 - Активный pipeline переведён в one-pass режим.
 - Добавлена сборка документа в единый PDF.
+- Исправлены дробные Width/Height в PDF image XObject.
+- Итоговый JSON очищен от debug/internal-полей.
+- `docId` больше не строится из имени входящего файла.
 - Добавлены реальные output naming templates.
 
 ### Still open

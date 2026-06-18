@@ -48,6 +48,23 @@ The model should return:
 }
 ```
 
+The final output JSON is flat. `normalize-fields` and `write-output` move model fields to top-level keys and do not keep `fields`, `validation`, `source`, or `selectedDocType` in the final file.
+
+```json
+{
+  "docId": "dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>",
+  "docType": "vehicle_registration_certificate",
+  "docTypeName": "Свидетельство о регистрации ТС",
+  "status": "ok",
+  "confidence": 0.95,
+  "vin": "X7L4SRLVA64034752",
+  "vehicle_number": "M57TM159",
+  "createdAt": "...",
+  "pdfFileName": "СТС M57TM159.pdf",
+  "jsonFileName": "СТС M57TM159.json"
+}
+```
+
 Rules:
 
 ```text
@@ -57,8 +74,6 @@ Rules:
 - Dates should be normalized to YYYY-MM-DD when possible.
 - Return only JSON, without markdown or explanations.
 ```
-
-## Document-specific prompt rules
 
 ### `egrul_extract` — Выписка из ЕГРЮЛ
 

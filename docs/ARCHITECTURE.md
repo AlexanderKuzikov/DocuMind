@@ -94,6 +94,7 @@ Behavior:
 
 - PDF pages are rasterized;
 - images are converted to JPEG;
+- page/image dimensions are rounded to integer PDF units;
 - all pages/files are assembled into one PDF;
 - the first page image is passed to the LLM.
 
@@ -218,8 +219,9 @@ Output template:
 - normalizing dates to `YYYY-MM-DD`;
 - normalizing VIN/vehicle number to uppercase;
 - checking required fields;
-- setting `selectedDocType`;
-- preparing the final document object for `write-output`.
+- setting `confidence`;
+- keeping `outputNaming` as an internal naming hint;
+- preparing a flat final document object for `write-output`.
 
 ## Output writer
 
@@ -230,19 +232,18 @@ output/<name>.pdf
 output/<name>.json
 ```
 
-The JSON includes:
+The JSON is flat and does not include debug/internal fields such as `source`, `validation`, `selectedDocType`, or `outputNaming`.
 
 ```text
 docId
 docType
 docTypeName
 status
+confidence
+document fields as top-level keys
+createdAt
 pdfFileName
 jsonFileName
-fields
-validation
-source
-createdAt
 ```
 
 If an output name already exists, the writer adds a numeric suffix such as `_001`.
@@ -280,10 +281,13 @@ config/prompts/templates/*.md
 - loading config;
 - loading doc types;
 - loading components;
+- generating `docId` as `dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>`;
 - running the pipeline in order;
 - creating/closing LLM sessions;
 - writing debug artifacts;
 - enforcing sequential execution with a pipeline lock.
+
+The `docId` is not derived from the incoming filename. It is derived from file content hashes/sizes plus a run suffix.
 
 The orchestrator should stay “dumb”: no business logic inside it.
 
