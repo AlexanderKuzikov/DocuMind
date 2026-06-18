@@ -2,6 +2,7 @@ const state = {
   docTypes: [],
   prompts: [],
   components: [],
+  pipeline: [],
   selectedDocType: null,
   selectedPrompt: null
 };
@@ -59,6 +60,7 @@ async function saveConfig() {
 async function loadPipeline() {
   const result = await api('/api/components');
   state.components = result.available;
+  state.pipeline = result.pipeline;
   renderPipeline(result.pipeline, result.available);
   setStatus('Pipeline loaded');
 }
@@ -108,10 +110,12 @@ function renderPipeline(pipeline, available) {
 }
 
 async function savePipeline() {
+  // BUG FIX: was reading input.dataset.field (undefined) instead of
+  // input.dataset.pipelineField, so enabled/required were never saved.
   const values = Array.from(document.querySelectorAll('[data-pipeline-field]')).reduce((map, input) => {
     const index = Number(input.dataset.index);
     map[index] = map[index] || {};
-    map[index][input.dataset.field] = input.checked;
+    map[index][input.dataset.pipelineField] = input.checked;
     return map;
   }, {});
 
@@ -292,13 +296,18 @@ document.addEventListener('click', async (event) => {
   const pipelineAction = event.target.closest('[data-pipeline-action]');
   if (pipelineAction) {
     const index = Number(pipelineAction.dataset.index);
-    if (pipelineAction.dataset.action === 'up') movePipelineStep(index, -1);
-    if (pipelineAction.dataset.action === 'down') movePipelineStep(index, 1);
-    if (pipelineAction.dataset.action === 'remove') removePipelineStep(index);
+    // Use pipelineAction.dataset.pipelineAction to avoid collision with the
+    // [data-action] handler above.
+    if (pipelineAction.dataset.pipelineAction === 'up') movePipelineStep(index, -1);
+    if (pipelineAction.dataset.pipelineAction === 'down') movePipelineStep(index, 1);
+    if (pipelineAction.dataset.pipelineAction === 'remove') removePipelineStep(index);
   }
 
-  const addComponent = event.target.closest('[data-add-component]');
-  if (addComponent) await addComponent(addComponent.dataset.addComponent);
+  // BUG FIX: renamed from addComponent to addComponentEl to avoid shadowing
+  // the addComponent() function — previously calling addComponent(...) here
+  // would try to invoke the DOM element as a function and throw.
+  const addComponentEl = event.target.closest('[data-add-component]');
+  if (addComponentEl) await addComponent(addComponentEl.dataset.addComponent);
 
   const docType = event.target.closest('[data-doc-type]');
   if (docType) selectDocType(docType.dataset.docType);
@@ -314,11 +323,10 @@ document.addEventListener('change', async (event) => {
   if (event.target.matches('[data-pipeline-field]')) {
     const index = Number(event.target.dataset.index);
     state.pipeline[index] = state.pipeline[index] || {};
-    state.pipeline[index][event.target.dataset.field] = event.target.checked;
+    // BUG FIX: was dataset.field (undefined), now correctly dataset.pipelineField
+    state.pipeline[index][event.target.dataset.pipelineField] = event.target.checked;
   }
 });
-
-state.pipeline = [];
 
 async function init() {
   try {
