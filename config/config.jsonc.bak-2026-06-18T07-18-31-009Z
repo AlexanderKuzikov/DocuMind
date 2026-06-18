@@ -111,56 +111,48 @@
   },
   "pipeline": [
     {
-      "order": 1,
       "id": "discoverDocuments",
       "component": "discover-documents",
       "enabled": true,
       "required": true
     },
     {
-      "order": 2,
       "id": "rasterizeFirstPage",
       "component": "rasterize-first-page",
       "enabled": true,
       "required": true
     },
     {
-      "order": 3,
       "id": "buildUniversalPrompt",
       "component": "build-universal-prompt",
       "enabled": true,
       "required": true
     },
     {
-      "order": 4,
       "id": "llmUniversalPass",
       "component": "llm-universal-pass",
       "enabled": true,
       "required": true
     },
     {
-      "order": 5,
       "id": "buildSpecificPrompt",
       "component": "build-specific-prompt",
-      "enabled": false,
-      "required": false
+      "enabled": true,
+      "required": true
     },
     {
-      "order": 6,
       "id": "llmSpecificPass",
       "component": "llm-specific-pass",
-      "enabled": false,
-      "required": false
+      "enabled": true,
+      "required": true
     },
     {
-      "order": 7,
       "id": "normalizeFields",
       "component": "normalize-fields",
-      "enabled": false,
-      "required": false
+      "enabled": true,
+      "required": true
     },
     {
-      "order": 8,
       "id": "writeOutput",
       "component": "write-output",
       "enabled": true,
