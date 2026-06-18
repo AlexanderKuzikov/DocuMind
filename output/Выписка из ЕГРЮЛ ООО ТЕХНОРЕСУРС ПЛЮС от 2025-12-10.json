@@ -1,0 +1,145 @@
+{
+  "docId": "ul_1045900353443_20251210135331_1781776759255",
+  "docType": "egrul_extract",
+  "docTypeName": "Выписка из ЕГРЮЛ",
+  "status": "ok",
+  "selectedDocType": {
+    "type": "egrul_extract",
+    "name": "Выписка из ЕГРЮЛ",
+    "aliases": [
+      "Выписка из ЕГРЮЛ",
+      "ЕГРЮЛ",
+      "выписка юридического лица"
+    ],
+    "recognitionFeatures": [
+      "Заголовок «Выписка из Единого государственного реестра юридических лиц» или «Выписка из ЕГРЮЛ».",
+      "Есть ОГРН организации.",
+      "Есть запись о дате внесения сведений в ЕГРЮЛ.",
+      "Есть полное и сокращённое наименование юридического лица на русском языке."
+    ],
+    "fields": [
+      {
+        "id": "ogrn",
+        "label": "ОГРН",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "digits-only",
+          "length:13"
+        ],
+        "extractionHint": "13 цифр. Брать именно ОГРН организации, не номер записи и не номер выписки."
+      },
+      {
+        "id": "registration_record_date",
+        "label": "Дата внесения записи в ЕГРЮЛ",
+        "type": "date",
+        "required": true,
+        "normalization": [
+          "date"
+        ],
+        "extractionHint": "Дата внесения записи, содержащей указанные сведения. Не дата выписки."
+      },
+      {
+        "id": "short_name_ru",
+        "label": "Сокращённое наименование на русском языке",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "trim"
+        ],
+        "extractionHint": "Например: ООО «Название» или ООО \"Название\"."
+      }
+    ],
+    "firstPassFields": [
+      {
+        "id": "ogrn",
+        "label": "ОГРН",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "digits-only",
+          "length:13"
+        ]
+      },
+      {
+        "id": "registration_record_date",
+        "label": "Дата внесения записи в ЕГРЮЛ",
+        "type": "date",
+        "required": true,
+        "normalization": [
+          "date"
+        ]
+      },
+      {
+        "id": "short_name_ru",
+        "label": "Сокращённое наименование на русском языке",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "trim"
+        ]
+      }
+    ],
+    "secondPassFields": [],
+    "validationRules": [
+      "ОГРН должен содержать ровно 13 цифр.",
+      "Для именования выходного файла использовать дату внесения записи в ЕГРЮЛ, а не дату выписки."
+    ],
+    "crmNaming": {
+      "template": "Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}"
+    },
+    "outputNaming": {
+      "template": "Выписка из ЕГРЮЛ {short_name_ru} от {registration_record_date}"
+    },
+    "sourceFile": "d:\\DocuMind\\config\\doc_types\\egrul_extract.json"
+  },
+  "source": {
+    "inputPath": "d:\\DocuMind\\input\\ul-1045900353443-20251210135331.pdf",
+    "inputFiles": [
+      {
+        "path": "d:\\DocuMind\\input\\ul-1045900353443-20251210135331.pdf",
+        "name": "ul-1045900353443-20251210135331.pdf"
+      }
+    ],
+    "sourceKind": "file",
+    "assembledPdfPath": "d:\\DocuMind\\staging\\ul_1045900353443_20251210135331_1781776759255\\assembled\\document.pdf",
+    "imagePath": "d:\\DocuMind\\staging\\ul_1045900353443_20251210135331_1781776759255\\assembled\\page-001.jpg"
+  },
+  "firstPass": {
+    "docType": "egrul_extract",
+    "confidence": 0.98,
+    "fields": {
+      "ogrn": "1045900353443",
+      "registration_record_date": "2025-12-10",
+      "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
+    }
+  },
+  "rawExtracted": {
+    "docType": "egrul_extract",
+    "confidence": 0.98,
+    "fields": {
+      "ogrn": "1045900353443",
+      "registration_record_date": "2025-12-10",
+      "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
+    }
+  },
+  "fields": {
+    "ogrn": "1045900353443",
+    "registration_record_date": "2025-12-10",
+    "short_name_ru": "ООО \"ТЕХНОРЕСУРС ПЛЮС\""
+  },
+  "validation": {
+    "ok": true,
+    "errors": []
+  },
+  "crm": {
+    "documentType": "egrul_extract",
+    "documentNumber": null,
+    "documentDate": "2025-12-10"
+  },
+  "createdAt": "2026-06-18T10:02:44.593Z",
+  "pdfFileName": "Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf",
+  "jsonFileName": "Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.json",
+  "outputPdfPath": "d:\\DocuMind\\output\\Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf",
+  "outputJsonPath": "d:\\DocuMind\\output\\Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.json"
+}

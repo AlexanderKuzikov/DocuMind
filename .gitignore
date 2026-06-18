@@ -5,7 +5,6 @@ node_modules/
 staging/
 debug/
 golden-reports/
-output/
 logs/
 *.log
 

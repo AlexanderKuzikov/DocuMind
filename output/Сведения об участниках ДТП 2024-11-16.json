@@ -1,0 +1,122 @@
+{
+  "docId": "определение_приложение_к_определению_сведения_о_водителях_1781776499259",
+  "docType": "traffic_accident_participants",
+  "docTypeName": "Сведения об участниках ДТП",
+  "status": "ok",
+  "selectedDocType": {
+    "type": "traffic_accident_participants",
+    "name": "Сведения об участниках ДТП",
+    "aliases": [
+      "Сведения об участниках ДТП",
+      "участники ДТП",
+      "приложение к постановлению",
+      "сведения о водителях"
+    ],
+    "recognitionFeatures": [
+      "Заголовок «Сведения об участниках ДТП» или похожий раздел о водителях/участниках.",
+      "Есть место/адрес ДТП.",
+      "Есть дата ДТП.",
+      "Документ может быть приложением к постановлению или определению."
+    ],
+    "fields": [
+      {
+        "id": "accident_location",
+        "label": "Место ДТП",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "trim"
+        ],
+        "extractionHint": "Место/адрес ДТП. Лучше использовать формулировку «Место ДТП», потому что это может быть трасса, участок дороги или иной ориентир."
+      },
+      {
+        "id": "accident_date",
+        "label": "Дата ДТП",
+        "type": "date",
+        "required": true,
+        "normalization": [
+          "date"
+        ],
+        "extractionHint": "Дата дорожно-транспортного происшествия."
+      }
+    ],
+    "firstPassFields": [
+      {
+        "id": "accident_location",
+        "label": "Место ДТП",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "trim"
+        ]
+      },
+      {
+        "id": "accident_date",
+        "label": "Дата ДТП",
+        "type": "date",
+        "required": true,
+        "normalization": [
+          "date"
+        ]
+      }
+    ],
+    "secondPassFields": [],
+    "validationRules": [
+      "Место ДТП должно быть указано как адрес, трасса, участок дороги или иной понятный ориентир.",
+      "Дата ДТП должна быть приведена к формату YYYY-MM-DD."
+    ],
+    "crmNaming": {
+      "template": "Сведения об участниках ДТП {accident_date}"
+    },
+    "outputNaming": {
+      "template": "Сведения об участниках ДТП {accident_date}"
+    },
+    "sourceFile": "d:\\DocuMind\\config\\doc_types\\traffic_accident_participants.json"
+  },
+  "source": {
+    "inputPath": "d:\\DocuMind\\input\\определение, приложение к определению, сведения о водителях.pdf",
+    "inputFiles": [
+      {
+        "path": "d:\\DocuMind\\input\\определение, приложение к определению, сведения о водителях.pdf",
+        "name": "определение, приложение к определению, сведения о водителях.pdf"
+      }
+    ],
+    "sourceKind": "file",
+    "assembledPdfPath": "d:\\DocuMind\\staging\\определение_приложение_к_определению_сведения_о_водителях_1781776499259\\assembled\\document.pdf",
+    "imagePath": "d:\\DocuMind\\staging\\определение_приложение_к_определению_сведения_о_водителях_1781776499259\\assembled\\page-001.jpg"
+  },
+  "firstPass": {
+    "docType": "traffic_accident_participants",
+    "confidence": 0.95,
+    "fields": {
+      "accident_location": "Пермский край, Кострома - Шарья - Киров - Пермь, подъезд к г. Иже 10,5 км.",
+      "accident_date": "2024-11-16"
+    }
+  },
+  "rawExtracted": {
+    "docType": "traffic_accident_participants",
+    "confidence": 0.95,
+    "fields": {
+      "accident_location": "Пермский край, Кострома - Шарья - Киров - Пермь, подъезд к г. Иже 10,5 км.",
+      "accident_date": "2024-11-16"
+    }
+  },
+  "fields": {
+    "accident_location": "Пермский край, Кострома - Шарья - Киров - Пермь, подъезд к г. Иже 10,5 км.",
+    "accident_date": "2024-11-16"
+  },
+  "validation": {
+    "ok": true,
+    "errors": []
+  },
+  "crm": {
+    "documentType": "traffic_accident_participants",
+    "documentNumber": null,
+    "documentDate": "2024-11-16"
+  },
+  "createdAt": "2026-06-18T09:57:20.580Z",
+  "pdfFileName": "Сведения об участниках ДТП 2024-11-16.pdf",
+  "jsonFileName": "Сведения об участниках ДТП 2024-11-16.json",
+  "outputPdfPath": "d:\\DocuMind\\output\\Сведения об участниках ДТП 2024-11-16.pdf",
+  "outputJsonPath": "d:\\DocuMind\\output\\Сведения об участниках ДТП 2024-11-16.json"
+}

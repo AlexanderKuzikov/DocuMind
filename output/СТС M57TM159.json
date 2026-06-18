@@ -1,0 +1,124 @@
+{
+  "docId": "свидетельство_о_регистрации_тс_1_1781776640591",
+  "docType": "vehicle_registration_certificate",
+  "docTypeName": "Свидетельство о регистрации ТС",
+  "status": "ok",
+  "selectedDocType": {
+    "type": "vehicle_registration_certificate",
+    "name": "Свидетельство о регистрации ТС",
+    "aliases": [
+      "Свидетельство о регистрации ТС",
+      "СТС",
+      "регистрационное удостоверение транспортного средства"
+    ],
+    "recognitionFeatures": [
+      "Заголовок «Свидетельство о регистрации ТС» или «Свидетельство о регистрации транспортного средства».",
+      "Есть VIN / идентификационный номер автомобиля.",
+      "Есть государственный регистрационный номер машины."
+    ],
+    "fields": [
+      {
+        "id": "vin",
+        "label": "Идентификационный номер (VIN)",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "uppercase",
+          "trim"
+        ],
+        "extractionHint": "VIN автомобиля. Обычно 17 символов латиницей и цифрами."
+      },
+      {
+        "id": "vehicle_number",
+        "label": "Номер машины",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "uppercase",
+          "trim"
+        ],
+        "extractionHint": "Государственный регистрационный номер ТС, например M57TM159."
+      }
+    ],
+    "firstPassFields": [
+      {
+        "id": "vin",
+        "label": "Идентификационный номер (VIN)",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "uppercase",
+          "trim"
+        ]
+      },
+      {
+        "id": "vehicle_number",
+        "label": "Номер машины",
+        "type": "string",
+        "required": true,
+        "normalization": [
+          "uppercase",
+          "trim"
+        ]
+      }
+    ],
+    "secondPassFields": [],
+    "validationRules": [
+      "VIN должен быть указан без пробелов и лишних символов.",
+      "Номер машины должен соответствовать российскому госномеру, если он явно указан."
+    ],
+    "crmNaming": {
+      "template": "СТС {vehicle_number}"
+    },
+    "outputNaming": {
+      "template": "СТС {vehicle_number}"
+    },
+    "sourceFile": "d:\\DocuMind\\config\\doc_types\\vehicle_registration_certificate.json"
+  },
+  "source": {
+    "inputPath": "d:\\DocuMind\\input\\Свидетельство о регистрации ТС 1.pdf",
+    "inputFiles": [
+      {
+        "path": "d:\\DocuMind\\input\\Свидетельство о регистрации ТС 1.pdf",
+        "name": "Свидетельство о регистрации ТС 1.pdf"
+      }
+    ],
+    "sourceKind": "file",
+    "assembledPdfPath": "d:\\DocuMind\\staging\\свидетельство_о_регистрации_тс_1_1781776640591\\assembled\\document.pdf",
+    "imagePath": "d:\\DocuMind\\staging\\свидетельство_о_регистрации_тс_1_1781776640591\\assembled\\page-001.jpg"
+  },
+  "firstPass": {
+    "docType": "vehicle_registration_certificate",
+    "confidence": 0.95,
+    "fields": {
+      "vin": "X7L45RLVA64034752",
+      "vehicle_number": "M57TM159"
+    }
+  },
+  "rawExtracted": {
+    "docType": "vehicle_registration_certificate",
+    "confidence": 0.95,
+    "fields": {
+      "vin": "X7L45RLVA64034752",
+      "vehicle_number": "M57TM159"
+    }
+  },
+  "fields": {
+    "vin": "X7L45RLVA64034752",
+    "vehicle_number": "M57TM159"
+  },
+  "validation": {
+    "ok": true,
+    "errors": []
+  },
+  "crm": {
+    "documentType": "vehicle_registration_certificate",
+    "documentNumber": null,
+    "documentDate": null
+  },
+  "createdAt": "2026-06-18T09:59:19.245Z",
+  "pdfFileName": "СТС M57TM159.pdf",
+  "jsonFileName": "СТС M57TM159.json",
+  "outputPdfPath": "d:\\DocuMind\\output\\СТС M57TM159.pdf",
+  "outputJsonPath": "d:\\DocuMind\\output\\СТС M57TM159.json"
+}
