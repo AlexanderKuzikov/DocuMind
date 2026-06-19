@@ -1,0 +1,12 @@
+{
+  "docId": "dm-20260618131831-7a8f5289ed28-2540",
+  "docType": "vehicle_registration_certificate",
+  "docTypeName": "Свидетельство о регистрации ТС",
+  "status": "ok",
+  "confidence": 1,
+  "vin": "X7L4SRLV464034752",
+  "vehicle_number": "M57TM159",
+  "createdAt": "2026-06-18T13:18:37.425Z",
+  "pdfFileName": "СТС M57TM159.pdf",
+  "jsonFileName": "СТС M57TM159.json"
+}
