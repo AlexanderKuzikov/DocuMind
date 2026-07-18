@@ -18,24 +18,46 @@
       "label": "ОГРН",
       "type": "string",
       "required": true,
-      "normalization": ["digits-only", "length:13"],
-      "extractionHint": "13 цифр. Брать именно ОГРН организации, не номер записи и не номер выписки."
+      "normalization": [
+        "digits-only",
+        "length:13"
+      ],
+      "extractionHint": "13 цифр. Брать именно ОГРН организации, не номер записи и не номер выписки.",
+      "aliases": [
+        "OGRN",
+        "ОГРН"
+      ]
     },
     {
       "id": "registration_record_date",
       "label": "Дата внесения записи в ЕГРЮЛ",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
-      "extractionHint": "Дата внесения записи, содержащей указанные сведения. Не дата выписки."
+      "normalization": [
+        "date"
+      ],
+      "extractionHint": "Дата внесения записи, содержащей указанные сведения. Не дата выписки.",
+      "aliases": [
+        "registration_date",
+        "record_date",
+        "date_of_record",
+        "date"
+      ]
     },
     {
       "id": "short_name_ru",
       "label": "Сокращённое наименование на русском языке",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "extractionHint": "Например: ООО «Название» или ООО \"Название\"."
+      "normalization": [
+        "trim"
+      ],
+      "extractionHint": "Например: ООО «Название» или ООО \"Название\".",
+      "aliases": [
+        "legal_entity_short_name",
+        "shortNameRu",
+        "short_name"
+      ]
     }
   ],
   "firstPassFields": [
@@ -44,21 +66,43 @@
       "label": "ОГРН",
       "type": "string",
       "required": true,
-      "normalization": ["digits-only", "length:13"]
+      "normalization": [
+        "digits-only",
+        "length:13"
+      ],
+      "aliases": [
+        "OGRN",
+        "ОГРН"
+      ]
     },
     {
       "id": "registration_record_date",
       "label": "Дата внесения записи в ЕГРЮЛ",
       "type": "date",
       "required": true,
-      "normalization": ["date"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "registration_date",
+        "record_date",
+        "date_of_record",
+        "date"
+      ]
     },
     {
       "id": "short_name_ru",
       "label": "Сокращённое наименование на русском языке",
       "type": "string",
       "required": true,
-      "normalization": ["trim"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "legal_entity_short_name",
+        "shortNameRu",
+        "short_name"
+      ]
     }
   ],
   "secondPassFields": [],

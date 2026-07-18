@@ -19,16 +19,31 @@
       "label": "Место ДТП",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "extractionHint": "Место/адрес ДТП. Лучше использовать формулировку «Место ДТП», потому что это может быть трасса, участок дороги или иной ориентир."
+      "normalization": [
+        "trim"
+      ],
+      "extractionHint": "Место/адрес ДТП. Лучше использовать формулировку «Место ДТП», потому что это может быть трасса, участок дороги или иной ориентир.",
+      "aliases": [
+        "location",
+        "place",
+        "address",
+        "Место ДТП",
+        "Адрес ДТП"
+      ]
     },
     {
       "id": "accident_date",
       "label": "Дата ДТП",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
-      "extractionHint": "Дата дорожно-транспортного происшествия."
+      "normalization": [
+        "date"
+      ],
+      "extractionHint": "Дата дорожно-транспортного происшествия.",
+      "aliases": [
+        "date",
+        "Дата ДТП"
+      ]
     }
   ],
   "firstPassFields": [
@@ -37,14 +52,29 @@
       "label": "Место ДТП",
       "type": "string",
       "required": true,
-      "normalization": ["trim"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "location",
+        "place",
+        "address",
+        "Место ДТП",
+        "Адрес ДТП"
+      ]
     },
     {
       "id": "accident_date",
       "label": "Дата ДТП",
       "type": "date",
       "required": true,
-      "normalization": ["date"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "date",
+        "Дата ДТП"
+      ]
     }
   ],
   "secondPassFields": [],

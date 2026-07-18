@@ -93,33 +93,17 @@ function pickField(fields, aliases) {
   return null;
 }
 
-function applyTypeAliases(docType, fields) {
-  if (docType === 'egrul_extract') {
-    return {
-      ...fields,
-      ogrn: pickField(fields, ['ogrn', 'OGRN', 'ОГРН']) || fields.ogrn || null,
-      registration_record_date: pickField(fields, ['registration_record_date', 'registration_date', 'record_date', 'date_of_record', 'date']) || null,
-      short_name_ru: pickField(fields, ['short_name_ru', 'legal_entity_short_name', 'shortNameRu', 'short_name']) || null
-    };
+function applyTypeAliases(docTypeConfig, fields) {
+  if (!docTypeConfig) return fields;
+  const result = { ...fields };
+  const fieldDefs = docTypeConfig.fields || docTypeConfig.firstPassFields || [];
+  for (const fieldDef of fieldDefs) {
+    const aliases = fieldDef.aliases || [];
+    if (aliases.length > 0) {
+      result[fieldDef.id] = pickField(fields, [fieldDef.id, ...aliases]) || null;
+    }
   }
-
-  if (docType === 'vehicle_registration_certificate') {
-    return {
-      ...fields,
-      vin: pickField(fields, ['vin', 'VIN', 'vehicle_identification_number']) || null,
-      vehicle_number: pickField(fields, ['vehicle_number', 'stateRegistrationNumber', 'registration_number', 'license_plate', 'licensePlate', 'номер машины', 'Номер машины']) || null
-    };
-  }
-
-  if (docType === 'traffic_accident_participants') {
-    return {
-      ...fields,
-      accident_location: pickField(fields, ['accident_location', 'location', 'place', 'address', 'Место ДТП', 'Адрес ДТП']) || null,
-      accident_date: pickField(fields, ['accident_date', 'date', 'Дата ДТП']) || null
-    };
-  }
-
-  return fields;
+  return result;
 }
 
 export async function run(context) {
@@ -134,7 +118,7 @@ export async function run(context) {
 
   const docType = firstPass.docType || rawExtracted.docType || rawExtracted.docTypeGuess || 'unknown';
   const docTypeConfig = context.docTypes.find((item) => item.type === docType) || null;
-  const typedFields = applyTypeAliases(docType, fields);
+  const typedFields = applyTypeAliases(docTypeConfig, fields);
 
   const errors = [];
   for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {

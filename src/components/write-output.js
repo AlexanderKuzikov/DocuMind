@@ -14,7 +14,7 @@ export const meta = {
 function sanitizeFileNamePart(value) {
   return String(value ?? 'unknown')
     .normalize('NFKD')
-    .replace(/[\\/:*?"<>|«»„“'"]/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, ' ').replace(/[«»„]/g, '„').replace(/["'“”]/g, '“')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120) || 'unknown';

@@ -83,7 +83,7 @@ async function rasterizePdfPages(filePath, outputDir, dpi, quality) {
         pageNumber
       });
     } finally {
-      page.cleanup();
+      try { page.cleanup(); } catch { /* ignore */ }
     }
   }
 

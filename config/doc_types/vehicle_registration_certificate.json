@@ -17,16 +17,34 @@
       "label": "Идентификационный номер (VIN)",
       "type": "string",
       "required": true,
-      "normalization": ["uppercase", "trim"],
-      "extractionHint": "VIN автомобиля. Обычно 17 символов латиницей и цифрами."
+      "normalization": [
+        "uppercase",
+        "trim"
+      ],
+      "extractionHint": "VIN автомобиля. Обычно 17 символов латиницей и цифрами.",
+      "aliases": [
+        "VIN",
+        "vehicle_identification_number"
+      ]
     },
     {
       "id": "vehicle_number",
       "label": "Номер машины",
       "type": "string",
       "required": true,
-      "normalization": ["uppercase", "trim"],
-      "extractionHint": "Государственный регистрационный номер ТС, например M57TM159."
+      "normalization": [
+        "uppercase",
+        "trim"
+      ],
+      "extractionHint": "Государственный регистрационный номер ТС, например M57TM159.",
+      "aliases": [
+        "stateRegistrationNumber",
+        "registration_number",
+        "license_plate",
+        "licensePlate",
+        "номер машины",
+        "Номер машины"
+      ]
     }
   ],
   "firstPassFields": [
@@ -35,14 +53,32 @@
       "label": "Идентификационный номер (VIN)",
       "type": "string",
       "required": true,
-      "normalization": ["uppercase", "trim"]
+      "normalization": [
+        "uppercase",
+        "trim"
+      ],
+      "aliases": [
+        "VIN",
+        "vehicle_identification_number"
+      ]
     },
     {
       "id": "vehicle_number",
       "label": "Номер машины",
       "type": "string",
       "required": true,
-      "normalization": ["uppercase", "trim"]
+      "normalization": [
+        "uppercase",
+        "trim"
+      ],
+      "aliases": [
+        "stateRegistrationNumber",
+        "registration_number",
+        "license_plate",
+        "licensePlate",
+        "номер машины",
+        "Номер машины"
+      ]
     }
   ],
   "secondPassFields": [],

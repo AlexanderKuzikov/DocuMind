@@ -57,7 +57,7 @@
         "stream": false
       },
       "prod-ollama": {
-        "baseUrl": "http://127.0.0.1:11434/v1",
+        "baseUrl": "http://127.0.0.1:11434/v1",  // FIXME: заменить на IP офисного сервера
         "model": "qwen3.6:35b-a3b",
         "apiKeyEnv": null,
         "imageEncoding": "base64-prefixed",
