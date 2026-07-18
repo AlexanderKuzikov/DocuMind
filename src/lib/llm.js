@@ -175,6 +175,13 @@ export class LlmClient {
       body.reasoning_effort = 'none';
     }
 
+    // Ollama num_ctx override - critical for legal documents.
+    // Ollama defaults to 2048 tokens, silently evicting earlier tokens when exceeded.
+    // See Ollama.md for the full analysis.
+    if (profile.numCtx) {
+      body.options = { num_ctx: profile.numCtx };
+    }
+
     const timeoutMs = profile.timeout || this.config.llm.timeout || 180000;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);

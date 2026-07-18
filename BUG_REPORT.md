@@ -1,19 +1,20 @@
 # BUG_REPORT — DocuMind
 
-Дата ревью: **2026-06-18**
+Дата ревью: **2026-07-18** (предыдущее: 2026-06-18)
 
-Ревью охватывало:
+Ревью охватывало весь проект:
 
-- `src/lib/llm.js`;
-- `src/components/llm-universal-pass.js`;
-- `src/components/llm-specific-pass.js`;
-- `src/components/rasterize-first-page.js`;
-- `src/components/normalize-fields.js`;
-- `src/components/write-output.js`;
-- `src/orchestrator.js`;
-- `config/config.jsonc`;
-- `config/doc_types/*.json`;
-- `config/prompts/templates/*.md`.
+- `src/lib/llm.js`
+- `src/components/*.js` (все 8)
+- `src/orchestrator.js`
+- `src/prompt-builder.js`
+- `src/doc-type-registry.js`
+- `src/test/golden-runner.js`
+- `config/config.jsonc`
+- `config/doc_types/*.json`
+- `config/prompts/templates/*.md`
+- `docs/ARCHITECTURE.md`, `docs/PROMPTS.md`, `docs/GOLDEN_SET.md`
+- `Ollama.md`, `README.md`, `CONTEXT.md`
 
 ---
 
@@ -21,275 +22,151 @@
 
 | ID | Файл | Статус | Суть |
 |---|---|---|---|
-| Б-1 | `config/config.jsonc` | ✅ Исправлен | `local-lmstudio` получил `imageEncoding: "base64-prefixed"` и `lmStudioCompat: true` |
-| Б-2 | `rasterize-first-page.js` | ✅ Устарел как блокер | Ошибка была в старом компоненте; активный MVP использует `assemble-document-pdf` |
+| Б-1 | `config.jsonc` | ✅ Исправлен | `local-lmstudio`: `imageEncoding: "base64-prefixed"` и `lmStudioCompat: true` |
+| Б-2 | `rasterize-first-page.js` | ✅ Устарел как блокер | Ошибка в старом компоненте; MVP использует `assemble-document-pdf` |
 | Б-3 | `normalize-fields.js` | ✅ Исправлен | `collectFields` переписан без двойного присваивания |
 | Б-4 | `src/lib/llm.js` | ✅ Исправлен | `content` как массив обрабатывается через `normalizeContent()` |
+| Б-5 | `src/lib/llm.js` | ✅ Исправлен (2026-06-18) | RouterAI: `ROUTERAI_API_KEY` не читался из `.env` |
 | В-1 | `src/lib/llm.js` | ✅ Исправлен | Prompt/text теперь идёт перед image |
-| В-2 | `assemble-document-pdf.js` | ✅ Исправлен в новом компоненте | Количество страниц сохраняется до cleanup |
-| В-3 | `assemble-document-pdf.js` / `src/lib/llm.js` | ✅ Частично закрыто | PDF и изображения в MVP приводятся к JPEG; MIME guard остаётся желательным для legacy-кода |
-| В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | Итоговый JSON плоский; `outputNaming` используется только внутренне для имени файла |
-| П-7 | `src/orchestrator.js` | ✅ Исправлен | `docId` больше не строится из имени входящего файла |
-| П-8 | `assemble-document-pdf.js` | ✅ Исправлен | Image `Width`/`Height` округляются до целых PDF units |
-| **Б-5** | **`src/lib/llm.js`** | **✅ Исправлен (2026-06-18)** | **RouterAI: `ROUTERAI_API_KEY` не читался из `.env` — см. ниже** |
-| П-1 | `src/lib/llm.js` | 🔵 Остался риск | Таймаут не покрывает `response.json()` |
-| П-2 | `orchestrator.js` + passes | 🔵 Остался риск | Lifecycle сессии размазан между оркестратором и LLM-компонентами |
-| П-3 | `src/lib/llm.js` | 🔵 Остался риск | `shouldSendImage` лучше сделать более явным |
-| П-4 | `orchestrator.js` | 🔵 Остался риск | `configDoctor` не проверяет дубли `step.id` |
-| П-5 | `assemble-document-pdf.js` | 🔵 Остался риск | Нужен более явный guard на неподдерживаемые расширения |
-| П-6 | все компоненты | 🔵 Остался риск | `meta.input` не валидируется оркестратором перед запуском |
+| В-2 | `assemble-document-pdf.js` | ✅ Исправлен | Количество страниц сохраняется до cleanup |
+| В-3 | `assemble-document-pdf.js` / `llm.js` | ✅ Частично | PDF и изображения приводятся к JPEG |
+| В-4 | `normalize-fields.js` / `write-output.js` | ✅ Исправлен | Итоговый JSON плоский |
+| П-7 | `src/orchestrator.js` | ✅ Исправлен | `docId` не строится из имени файла |
+| П-8 | `assemble-document-pdf.js` | ✅ Исправлен | Image Width/Height округляются до целых |
+| **C-2** | **`src/lib/llm.js` + `config.jsonc`** | **✅ Исправлен (2026-07-18)** | **Ollama `num_ctx` не передавался — молчаливое усечение документов (см. `Ollama.md`)** |
+| **C-3** | **`normalize-fields.js`** | **✅ Исправлен (2026-07-18)** | **`collectFields` — потенциальная бесконечная рекурсия / stack overflow** |
+| **H-2** | **`golden-runner.js`** | **✅ Исправлен (2026-07-18)** | **Сравнивал `actual.fields`, но итоговый JSON — плоский (поля на верхнем уровне)** |
+| H-1 | `config.jsonc` | 🔵 Открыт | `prod-ollama.baseUrl` = `127.0.0.1` вместо офисного сервера |
+| H-3 | `normalize-fields.js` | 🔵 Открыт | `applyTypeAliases` хардкодит алиасы полей вместо чтения из конфига |
+| M-1 | `write-output.js` | 🔵 Открыт | `sanitizeFileNamePart` вырезает кавычки `«»"` — ломает имена с `ООО "Название"` |
+| M-2 | `assemble-document-pdf.js` | 🔵 Открыт | `page.cleanup()` в finally без try/catch — может подавить оригинальную ошибку рендеринга |
+| П-1 | `src/lib/llm.js` | 🔵 Открыт | Таймаут не покрывает `response.json()` |
+| П-2 | `orchestrator.js` + passes | 🔵 Открыт | Lifecycle сессии размазан между оркестратором и LLM-компонентами |
+| П-3 | `src/lib/llm.js` | 🔵 Открыт | `shouldSendImage`: поведение `session` и unknown одинаково |
+| П-4 | `orchestrator.js` | 🔵 Открыт | `configDoctor` не проверяет дубли `step.id` |
+| П-5 | `assemble-document-pdf.js` | 🔵 Открыт | Нужен более явный guard на неподдерживаемые расширения |
+| П-6 | все компоненты | 🔵 Открыт | `meta.input` не валидируется оркестратором перед запуском |
+| П-9 | `discover-documents.js` | 🔵 Открыт | `entry.path ?? entry.parentPath ?? dir` — хрупкий обход различий Node.js API |
 
 ---
 
-## Что исправлено в MVP-режиме
+## Что исправлено 2026-07-18
 
-### 1. Удалены выдуманные типы документов
+### C-2. Ollama `num_ctx` — молчаливое усечение документов
 
-Были удалены старые demo-типы:
+**Файлы:** `src/lib/llm.js`, `config/config.jsonc`  
+**Связан:** `Ollama.md`
 
-```text
-passport
-invoice
-marriage_certificate
-traffic_accident_appendix
-```
+Проблема детально разобрана в `Ollama.md`:
 
-Добавлены реальные MVP-типы:
+- Ollama по умолчанию имеет **`num_ctx = 2048`** токенов (~1.5 страницы текста)
+- При превышении — **молча вытесняет первые токены**, модель «видит» только конец документа
+- Модель галлюцинирует или ломает JSON → парсер падает с невнятной ошибкой
 
-```text
-egrul_extract
-vehicle_registration_certificate
-traffic_accident_participants
-```
+**Исправление (два шага):**
 
----
-
-### 2. Активный pipeline переведён в one-pass режим
-
-Активный pipeline:
-
-```text
-discover-documents
-assemble-document-pdf
-build-universal-prompt
-llm-universal-pass
-normalize-fields
-write-output
-```
-
-Старые компоненты оставлены, но отключены в `config/config.jsonc`.
-
----
-
-### 3. Документ собирается в единый PDF
-
-Новый компонент:
-
-```text
-src/components/assemble-document-pdf.js
-```
-
-Он собирает один PDF для:
-
-- одного top-level файла;
-- одной top-level папки с несколькими файлами;
-- PDF-документов;
-- PNG/JPG/WebP изображений.
-
----
-
-### 4. Исправлена нормализация полей
-
-`normalize-fields.js` теперь:
-
-- читает `docType` из one-pass JSON;
-- извлекает поля по техническим ключам;
-- проверяет required fields;
-- нормализует даты;
-- сохраняет `confidence`;
-- держит `outputNaming` как внутренний hint для имени файла.
-
----
-
-### 5. Исправлено именование output
-
-`write-output.js` теперь применяет `outputNaming` из `config/doc_types/*.json`.
-
-Примеры:
-
-```text
-Выписка из ЕГРЮЛ ООО ТЕХНОРЕСУРС ПЛЮС от 2025-12-10.pdf
-СТС M57TM159.pdf
-Сведения об участниках ДТП 2024-11-16.pdf
-```
-
-Рядом сохраняется JSON с тем же именем.
-
----
-
-### 6. Итоговый JSON очищен
-
-`normalize-fields.js` теперь готовит плоский документ без debug/internal-полей:
-
-```text
-selectedDocType
-source
-firstPass
-rawExtracted
-validation
-crm
-outputPdfPath
-outputJsonPath
-outputNaming
-```
-
-Итоговый JSON содержит только служебные поля, confidence, поля документа верхним уровнем, `createdAt`, `pdfFileName` и `jsonFileName`.
-
----
-
-### 7. `docId` больше не зависит от имени файла
-
-`src/orchestrator.js` использует `src/lib/doc-id.js`.
-
-Формат:
-
-```text
-dm-YYYYMMDDHHMMSS-<content-hash>-<run-suffix>
-```
-
-Hash считается по содержимому файлов документа, а не по входящему имени файла. `run-suffix` делает ID уникальным при повторной обработке одного и того же документа.
-
----
-
-### 8. PDF image dimensions исправлены
-
-`assemble-document-pdf.js` округлял `Width`/`Height` страниц и JPEG XObject до целых чисел. Дробные размеры могли приводить к пустым страницам в PDF viewer/pdfjs.
-
-Проверка после исправления:
-
-```text
-Width/Height целые
-/Im0 Do присутствует
-страница рендерится с непустыми пикселями
-```
-
----
-
-### 9. Б-5: RouterAI — `ROUTERAI_API_KEY` не читался из `.env`
-
-**Файл:** `src/lib/llm.js`
-
-**Симптом:**
-
-```json
-{
-  "code": "COMPONENT_ERROR",
-  "message": "Missing API key env variable: ROUTERAI_API_KEY",
-  "stage": "llmUniversalPass"
+**Шаг 1 — `src/lib/llm.js`:** после формирования thinking-параметров добавлено:
+```js
+// Ollama num_ctx override — critical for legal documents.
+// Ollama defaults to 2048 tokens, silently evicting earlier tokens when exceeded.
+// See Ollama.md for the full analysis.
+if (profile.numCtx) {
+  body.options = { num_ctx: profile.numCtx };
 }
 ```
 
-Ошибка возникала даже при правильно прописанном ключе в `.env`.
+**Шаг 2 — `config/config.jsonc`:** в профиль `prod-ollama` добавлено:
+```jsonc
+"numCtx": 32768
+```
 
-**Причина:**
+**Важно (из Ollama.md):** при `num_ctx: 32768` на слабом железе возможен OOM. Мониторить VRAM при первых запусках.
 
-Функция `getEnvValue` в `src/lib/llm.js` читала переменные через `config.env` вместо `process.env`. При определённых условиях загрузки конфига `dotenv` к моменту вызова `getEnvValue` мог не заполнить `process.env`, либо `getEnvValue` обращалась не к тому источнику.
+---
 
-Дополнительно: для моделей с `disableThinking: true` (режим Qwen-think) в теле запроса не передавались нужные параметры для отключения thinking на стороне провайдера. RouterAI.ru и аналогичные провайдеры на базе OpenRouter требуют явного `reasoning_effort: "none"`.
+### C-3. `collectFields` — потенциальная бесконечная рекурсия
+
+**Файл:** `src/components/normalize-fields.js`
+
+Функция `collectFields` рекурсивно обходит объект без ограничения глубины. Циклическая ссылка или глубокая вложенность → stack overflow.
+
+**Исправление:** добавлен параметр `depth` и guard:
+```js
+function collectFields(raw, target = {}, prefix = '', depth = 0) {
+  if (depth > 20) return target;
+  // ...
+  collectFields(value, target, nextPrefix, depth + 1);
+}
+```
+
+---
+
+### H-2. `golden-runner.js` — сравнение несуществующего поля
+
+**Файл:** `src/test/golden-runner.js`
+
+Было:
+```js
+const passed = actual && deepEqual(actual.fields, expected.fields) && actual.docType === expected.docType;
+```
+Итоговый JSON — плоский, `actual.fields` всегда `undefined`. Сравнение не работало.
 
 **Исправление:**
+```js
+const fieldMatch = expected.fields
+  ? Object.entries(expected.fields).every(([k, v]) => actual?.[k] === v)
+  : true;
+const passed = actual && actual.docType === expected.docType && fieldMatch;
+```
 
-Добавлена тройная защита при `disableThinking: true`:
+---
+
+## Что осталось открытым
+
+### H-1. `prod-ollama.baseUrl` — localhost вместо офисного сервера
+
+**Файл:** `config/config.jsonc`
+
+```jsonc
+"prod-ollama": {
+  "baseUrl": "http://127.0.0.1:11434/v1",
+```
+
+`127.0.0.1` = localhost. В CONTEXT.md написано «Linux/on-prem office server». Нужно заменить на реальный IP сервера или оставить с явным FIXME-комментарием.
+
+---
+
+### H-3. `applyTypeAliases` — хардкод вместо конфига
+
+**Файл:** `src/components/normalize-fields.js`
+
+Для каждого типа документа жёстко зашиты алиасы полей. При добавлении нового типа придётся лезть в код. Алиасы должны быть в `config/doc_types/*.json`.
+
+---
+
+### M-1. `sanitizeFileNamePart` вырезает кавычки
+
+**Файл:** `src/components/write-output.js`, строка 15
 
 ```js
-if (profile.disableThinking) {
-  body.thinking = { type: 'disabled', budget_tokens: 0 }; // Anthropic / vLLM стиль
-  body.reasoning_effort = 'none';                          // OpenRouter / RouterAI стиль
-}
+.replace(/[\\/:*?"<>|«»„“'"]/g, ' ')
 ```
 
-**Урок для будущего:**
-
-При ошибке `Missing API key env variable: X` — сначала проверять не сам `.env`, а то, как `getEnvValue` читает переменные. Ключ может быть прописан верно, но функция смотреть не туда.
-
-При подключении нового провайдера через RouterAI / OpenRouter-совместимый шлюз — добавлять `reasoning_effort: "none"` явно, если модель поддерживает thinking (Qwen3, Claude 3.x и аналоги).
+Для `short_name_ru = ООО "Техноресурс Плюс"` имя файла станет с двойными пробелами. Нужно заменять кавычки на безопасный символ, а не удалять.
 
 ---
 
-## Актуальные открытые задачи
-
-### П-1. Таймаут не покрывает `response.json()`
-
-**Файл:** `src/lib/llm.js`
-
-`clearTimeout(timeout)` вызывается сразу после `fetch()`, до чтения тела ответа. При большом ответе может быть зависание.
-
-**Действие:** перенести очистку таймера после чтения/парсинга тела ответа.
-
----
-
-### П-2. Lifecycle сессии размазан
-
-**Файлы:**
-
-```text
-src/orchestrator.js
-src/components/llm-universal-pass.js
-src/components/llm-specific-pass.js
-src/lib/llm.js
-```
-
-Оркестратор создаёт сессию при `imagePolicy: "session"`, но LLM-компоненты также умеют создавать свои short-lived sessions.
-
-**Действие:** определить единственного владельца сессии.
-
----
-
-### П-3. `shouldSendImage` лучше сделать явнее
-
-**Файл:** `src/lib/llm.js`
-
-Сейчас поведение для `session` и неизвестных policy похоже.
-
-**Действие:** добавить явный `case 'session'` и warn на unknown policy.
-
----
-
-### П-4. `configDoctor` не проверяет дубли `step.id`
-
-**Файл:** `src/orchestrator.js`
-
-Два шага с одинаковым `id` не детектируются.
-
-**Действие:** добавить проверку уникальности `step.id`.
-
----
-
-### П-5. Guard на неподдерживаемые расширения
+### M-2. `page.cleanup()` без try/catch
 
 **Файл:** `src/components/assemble-document-pdf.js`
 
-Сейчас поддерживаются:
-
-```text
-.pdf
-.png
-.jpg
-.jpeg
-.webp
+```js
+} finally {
+  page.cleanup();  // если бросит — заменит оригинальную ошибку
+}
 ```
 
-**Действие:** добавить понятную ошибку для неподдерживаемых файлов внутри документа.
-
----
-
-### П-6. `meta.input` не валидируется перед запуском
-
-**Файлы:** все компоненты + `src/orchestrator.js`
-
-Если предыдущий шаг упал и artifact отсутствует, следующий компонент может получить `undefined`.
-
-**Действие:** рассмотреть pre-run проверку `meta.input` против `context.artifacts`.
+Нужно обернуть в try/catch.
 
 ---
 
@@ -297,7 +174,9 @@ src/lib/llm.js
 
 | Дата | Действие |
 |---|---|
-| 2026-06-18 | Первое ревью кода, зафиксированы баги Б-1…Б-4, В-1…В-4, П-1…П-6 |
-| 2026-06-18 | MVP-режим: one-pass extraction, grouped document assembly, реальные типы документов, output naming, field mappings |
-| 2026-06-18 | Исправлены пустые PDF, плоский итоговый JSON, `docId` без зависимости от имени файла |
-| 2026-06-18 | Б-5: RouterAI `ROUTERAI_API_KEY` не читался — исправлено + добавлен `reasoning_effort: "none"` для OpenRouter-совместимых провайдеров |
+| 2026-06-18 | Первое ревью: баги Б-1…Б-4, В-1…В-4, П-1…П-8 |
+| 2026-06-18 | MVP: one-pass extraction, grouped document assembly, реальные типы, output naming |
+| 2026-06-18 | Исправлены пустые PDF, плоский JSON, `docId` без имени файла |
+| 2026-06-18 | Б-5: RouterAI API key + `reasoning_effort: "none"` |
+| 2026-07-18 | Второе ревью: C-2, C-3, H-1…H-3, M-1…M-2, П-9 |
+| **2026-07-18** | **Исправлены C-2 (Ollama num_ctx), C-3 (collectFields recursion), H-2 (golden-runner fields)** |

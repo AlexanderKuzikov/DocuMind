@@ -1,4 +1,4 @@
-# CONTEXT
+﻿# CONTEXT
 
 Этот файл предназначен для быстрого погружения новой LLM/агента в проект.
 
@@ -70,7 +70,8 @@ llm-specific-pass
 - alias lookup для doc types;
 - golden runner;
 - README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET, BUG_REPORT;
-- локальный browser UI через `npm run ui`;
+- локальный browser UI через 
+pm run ui`;
 - UI save guard: backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback;
 - вкладка Field Mappings в UI.
 
@@ -237,7 +238,7 @@ Production target:
 ```text
 prod-ollama
 Linux/on-prem office server
-Ollama
+Ollama (numCtx: 32768 — см. Ollama.md)
 qwen3.6:35b-a3b
 ```
 
@@ -424,7 +425,8 @@ golden/
 ### Fixed in current MVP
 
 - Б-1: `local-lmstudio` получил `imageEncoding: "base64-prefixed"`.
-- Б-3: `normalize-fields` исправлен.
+- Б-3: 
+ormalize-fields` исправлен.
 - Б-4: `llm.js` нормально обрабатывает `content` как массив.
 - Б-5: RouterAI — `ROUTERAI_API_KEY` не читался из `.env`; добавлен `reasoning_effort: "none"` для OpenRouter-провайдеров.
 - В-1: prompt/text идёт перед image.
@@ -440,7 +442,7 @@ golden/
 ### Still open
 
 - Нет полноценного golden set на реальных документах.
-- Ollama office server ещё нужно проверить.
+- Ollama office server ещё нужно проверить (num_ctx добавлен в код и конфиг — см. Ollama.md).
 - Таймаут в `llm.js` не покрывает `response.json()`.
 - Lifecycle сессии размазан между orchestrator и LLM components.
 - `shouldSendImage` лучше сделать более явным.

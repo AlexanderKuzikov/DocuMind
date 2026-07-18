@@ -63,7 +63,8 @@
         "imageEncoding": "base64-prefixed",
         "lmStudioCompat": false,
         "timeout": 300000,
-        "stream": false
+        "stream": false,
+        "numCtx": 32768
       }
     }
   },

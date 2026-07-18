@@ -29,7 +29,8 @@ async function runGolden() {
     const expected = JSON.parse(await fs.readFile(path.join(caseDir, 'expected.json'), 'utf8'));
     const result = await runPipeline({ input: path.join(caseDir, 'input') });
     const actual = result[0]?.outputPath ? JSON.parse(await fs.readFile(result[0].outputPath, 'utf8')) : null;
-    const passed = actual && deepEqual(actual.fields, expected.fields) && actual.docType === expected.docType;
+    const fieldMatch = expected.fields ? Object.entries(expected.fields).every(([k, v]) => actual?.[k] === v) : true;
+    const passed = actual && actual.docType === expected.docType && fieldMatch;
     summary.push({
       case: path.relative(projectRoot, caseDir),
       passed,

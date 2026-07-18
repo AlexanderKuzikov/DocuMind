@@ -1,4 +1,4 @@
-# DocuMind
+﻿# DocuMind
 
 [![License](https://img.shields.io/github/license/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind/blob/main/LICENSE)
 [![GitHub last commit](https://img.shields.io/github/last-commit/AlexanderKuzikov/DocuMind)](https://github.com/AlexanderKuzikov/DocuMind/commits/main)
@@ -127,7 +127,7 @@ npm run extract
 Остаются:
 
 - полноценный golden set на реальных документах;
-- проверка офисного Ollama-сервера в локальной сети;
+- проверка офисного Ollama-сервера в локальной сети (см. Ollama.md про num_ctx);
 - расширение нормализации под юридически полный набор полей;
 - CI/quality gates.
 
@@ -186,7 +186,7 @@ lmStudioCompat: true
 ```text
 mvp-routerai      — RouterAI.ru, dev/sandbox только
 local-lmstudio    — локальные быстрые тесты
-prod-ollama       — целевой on-prem/Ollama-профиль
+prod-ollama       — целевой on-prem/Ollama-профиль (требует numCtx: 32768 в конфиге, см. Ollama.md)
 ```
 
 ### RouterAI / OpenRouter-совместимые провайдеры

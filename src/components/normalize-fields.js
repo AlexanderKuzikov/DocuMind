@@ -63,8 +63,9 @@ function normalizeField(field, value) {
   return result;
 }
 
-function collectFields(raw, target = {}, prefix = '') {
+function collectFields(raw, target = {}, prefix = '', depth = 0) {
   if (raw === null || raw === undefined) return target;
+  if (depth > 20) return target;
   if (Array.isArray(raw) || (raw && typeof raw === 'object')) {
     if (Array.isArray(raw)) {
       target[prefix] = raw;
@@ -73,7 +74,7 @@ function collectFields(raw, target = {}, prefix = '') {
     for (const [key, value] of Object.entries(raw)) {
       const nextPrefix = prefix ? `${prefix}.${key}` : key;
       if (Array.isArray(value) || (value && typeof value === 'object')) {
-        collectFields(value, target, nextPrefix);
+        collectFields(value, target, nextPrefix, depth + 1);
       } else {
         target[nextPrefix] = value;
       }
