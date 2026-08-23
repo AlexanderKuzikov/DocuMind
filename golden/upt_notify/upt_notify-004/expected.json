@@ -1,7 +1,13 @@
 {
   "docType": "upt_notify",
   "status": "ok",
-  "confidence": 0.9,
-  "contract_number": null,
-  "contract_date": null
+  "confidence": 0.95,
+  "contract_number": "08/08/2024/УПТ-2",
+  "contract_date": "2024-08-08",
+  "debtor": null,
+  "cedent": null,
+  "cessionary": null,
+  "amount": null,
+  "notification_date": null,
+  "recipient": "Копылову Виталию Дмитриевичу"
 }

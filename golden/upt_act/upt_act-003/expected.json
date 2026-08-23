@@ -1,7 +1,19 @@
 {
   "docType": "upt_act",
   "status": "ok",
-  "confidence": 0.9,
-  "contract_number": null,
-  "contract_date": null
+  "confidence": 0.95,
+  "contract_number": "000000113",
+  "contract_date": "2026-06-04",
+  "debtor": null,
+  "cedent": null,
+  "cessionary": null,
+  "amount": null,
+  "act_date": "2026-06-04",
+  "act_number": null,
+  "document_list": [
+    "Копия свидетельства о регистрации ТС",
+    "Копия страхового полиса ТТТ 7031504959",
+    "Копия Извещения о ДТП",
+    "Документы, подтверждающие страховую выплату"
+  ]
 }

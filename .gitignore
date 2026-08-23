@@ -5,6 +5,8 @@ _data/
 # Runtime data
 staging/
 debug/
+output/
+input/
 golden-reports/
 logs/
 *.log

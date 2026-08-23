@@ -1,7 +1,11 @@
 {
-  "docType": "upt_add",
+  "docType": "unknown",
   "status": "ok",
-  "confidence": 0.9,
+  "confidence": 0,
   "contract_number": null,
-  "contract_date": null
+  "contract_date": null,
+  "debtor": null,
+  "cedent": null,
+  "cessionary": null,
+  "amount": null
 }

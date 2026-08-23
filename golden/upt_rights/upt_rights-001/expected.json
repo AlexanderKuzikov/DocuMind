@@ -1,7 +1,14 @@
 {
   "docType": "upt_rights",
   "status": "ok",
-  "confidence": 0.9,
-  "contract_number": null,
-  "contract_date": null
+  "confidence": 1,
+  "contract_number": "05/08/2024/УПТ-2",
+  "contract_date": "2024-08-05",
+  "debtor": "Туров Алексей Николаевич",
+  "cedent": "ООО «ФРАТРИЯ»",
+  "cessionary": "Рябов Александр Владимирович",
+  "amount": "32 039 руб. 34 коп.",
+  "vehicle_number": "О801СР159",
+  "accident_date": "2023-10-15",
+  "accident_location": "г. Пермь, ул. Тургенева, д. 39"
 }

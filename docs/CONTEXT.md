@@ -536,6 +536,14 @@ Debug/input/output/staging/golden-репорты могут содержать �
 
 ---
 
+## Журнал работ (последние 20)
+
+- 2026-08-23: УПТ-блок заказчика (02 Цессия) — 5 типов `upt_*` (ТЗ 6 полей + 3 доп `vehicle_number`/`accident_*`), унифицирован `upt_act` из 3 папок, `assembled` PDF, `sanitize` слэшей для Windows `write-output.js:14`. Вход `input/` 29 рандом `doc_*.pdf` + `.mapping.json` (анти-подгляд), `structure.txt` 10421/139 — тренировка, не истина.
+- 2026-08-23: База промптов по типам `config/prompts/templates/types/<type>.md` 8 шт, `prompt-builder.js:107` per-type fallback, `ui-server.js:171` рекурсивный `types/`. Двухпроход оставлен `config.jsonc:72` one-pass для 8 типов, готов к 139 через `universal`+`specific`.
+- 2026-08-23: LLM resilience — `reasoning: {effort:"none"}` `src/lib/llm.js:181` (RouterAI `qwen/qwen3.6-35b-a3b` 0 tokens vs 370, проверено), ретрай 3× `429`/`5xx`/`Abort` + `response.json()` под таймаутом `llm.js:205`, `OLLAMA_BASE_URL`/`DOCUMIND_ACTIVE_PROFILE` env-override `llm.js:104` для офиса 5070 16GB MoE `Ollama.md:49`.
+- 2026-08-23: Визуальный контроль `ui` таб `Проверка` `ui/index.html:26` — `GET /api/verify/list` + `GET /api/raw/input|output` `ui-server.js:240`, split `iframe` PDF `62vh` + JSON таблица `verify-table` `style.css:360`. `normalize-fields.js:124` фикс `required` (было `partial` на optional).
+- 2026-08-23: Прогон 1 на 29 рандом — 28 `ok` + 1 `unknown` (доп 2022 без УПТ, честно), `golden/upt_*/` 5 кейсов для регресса, `knowledge/routerai-api.md:44` баланс `/credits` (RouterAI 79₽, OpenRouter 10.75$).
+
 ## Useful commands
 
 ```bash
@@ -543,6 +551,6 @@ npm run check
 npm run config:doctor
 npm run dry-run
 npm run extract
-npm run ui
+npm run ui          # http://127.0.0.1:4173 → Проверка
 npm run test:golden
 ```
