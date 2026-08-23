@@ -1,0 +1,19 @@
+{
+  "docId": "dm-20260823171846-354ade568c93-7a63",
+  "docType": "upt_rights",
+  "docTypeName": "Договор уступки прав (УПТ)",
+  "status": "ok",
+  "confidence": 1,
+  "contract_number": "05/08/2024/УПТ-5",
+  "contract_date": "2024-08-05",
+  "debtor": "Колесов Николаю Николаевичу",
+  "cedent": "ООО \"ТАКСОПАРК 59\"",
+  "cessionary": "ООО \"Консалт Плюс\"",
+  "amount": "57 728 руб. 67 коп.",
+  "vehicle_number": "Р633ВК159",
+  "accident_date": "2023-09-18",
+  "accident_location": "г. Пермь, ул. Н.Островского, д. 107",
+  "createdAt": "2026-08-23T17:18:56.423Z",
+  "pdfFileName": "Договор УПТ 05 08 2024 УПТ-5 от 2024-08-05.pdf",
+  "jsonFileName": "Договор УПТ 05 08 2024 УПТ-5 от 2024-08-05.json"
+}
