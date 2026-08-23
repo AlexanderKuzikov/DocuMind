@@ -1,0 +1,139 @@
+{
+  "type": "upt_notify",
+  "name": "Уведомление об уступке прав",
+  "aliases": [
+    "Уведомление об уступке",
+    "Уведомление УПТ",
+    "Уведомление о договоре УПТ"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Уведомление» об уступке прав требования по УПТ.",
+    "Адресат: причинитель вреда/страховая.",
+    "Ссылка на договор УПТ с номером и датой.",
+    "Подпись цессионария."
+  ],
+  "fields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ/УПТЮ (основного)",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Номер основного договора УПТ или УПТЮ из текста: 'в соответствии с договором уступки права требования 000000183' или из приложения 'договор № 28/12/2023/УПТ-8 от 28.12.2023 (копия)' или '№ 28/12/2023/УПТЮ-8'.",
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора УПТ/УПТЮ (основного)",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата основного договора УПТ/УПТЮ рядом с номером, например 28.12.2023.",
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "notification_date",
+      "label": "Дата уведомления",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "extractionHint": "Дата самого уведомления (если указана в шапке/подписи).",
+      "aliases": ["notificationDate", "дата уведомления"]
+    },
+    {
+      "id": "recipient",
+      "label": "Адресат (должник/страховая)",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Кому адресовано уведомление: ФИО должника или страховая.",
+      "aliases": ["addressee", "адресат", "получатель"]
+    },
+    {
+      "id": "recipient_address",
+      "label": "Адрес получателя",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Адрес должника/страховой из уведомления.",
+      "aliases": ["recipientAddress", "адрес получателя"]
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ/УПТЮ (основного)",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора УПТ/УПТЮ (основного)",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "notification_date",
+      "label": "Дата уведомления",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["notificationDate", "дата уведомления"]
+    },
+    {
+      "id": "recipient",
+      "label": "Адресат (должник/страховая)",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["addressee", "адресат", "получатель"]
+    },
+    {
+      "id": "recipient_address",
+      "label": "Адрес получателя",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["recipientAddress", "адрес получателя"]
+    }
+  ],
+  "secondPassFields": [
+    {
+      "id": "notification_date",
+      "label": "Дата уведомления",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["notificationDate", "дата уведомления"]
+    },
+    {
+      "id": "recipient",
+      "label": "Адресат",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["addressee", "адресат"]
+    },
+    {
+      "id": "recipient_address",
+      "label": "Адрес получателя",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["recipientAddress", "адрес получателя"]
+    }
+  ],
+  "validationRules": [
+    "Ссылка на договор в тексте 'п.3 ст.382 ГК' и в приложении '(копия)'."
+  ],
+  "crmNaming": {
+    "template": "Уведомление о договоре УПТ {contract_number} от {contract_date}"
+  },
+  "outputNaming": {
+    "template": "Уведомление о договоре УПТ {contract_number} от {contract_date}"
+  }
+}

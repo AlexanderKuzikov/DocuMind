@@ -1,0 +1,130 @@
+{
+  "type": "upt_add",
+  "name": "Дополнительное соглашение к УПТ",
+  "aliases": [
+    "Дополнительное соглашение",
+    "Доп соглашение к УПТ",
+    "ДС к УПТ"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Дополнительное соглашение» к договору УПТ.",
+    "Ссылка на основной договор УПТ с номером и датой.",
+    "Изменение условий уступки."
+  ],
+  "fields": [
+    {
+      "id": "addendum_date",
+      "label": "Дата доп соглашения",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата доп соглашения, например 28.12.2026. Брать из заголовка 'от ...'.",
+      "aliases": ["document_date", "date", "addendum_date", "дата соглашения"]
+    },
+    {
+      "id": "contract_number",
+      "label": "Номер основного договора УПТ/УПТЮ",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Номер основного договора УПТ или УПТЮ, на который ссылается доп соглашение, например 28/12/2023/УПТ-8.",
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата основного договора",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата основного договора рядом с номером.",
+      "aliases": ["main_contract_date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "addendum_number",
+      "label": "Номер доп соглашения",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Номер доп соглашения (если указан, например №1).",
+      "aliases": ["addendumNumber", "номер доп соглашения"]
+    },
+    {
+      "id": "new_amount",
+      "label": "Новая сумма/условия",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Новая сумма или изменённые условия из доп соглашения.",
+      "aliases": ["newAmount", "новая сумма"]
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "addendum_date",
+      "label": "Дата доп соглашения",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "aliases": ["document_date", "date", "addendum_date", "дата соглашения"]
+    },
+    {
+      "id": "contract_number",
+      "label": "Номер основного договора УПТ/УПТЮ",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата основного договора",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "aliases": ["main_contract_date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "addendum_number",
+      "label": "Номер доп соглашения",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["addendumNumber", "номер доп соглашения"]
+    },
+    {
+      "id": "new_amount",
+      "label": "Новая сумма/условия",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["newAmount", "новая сумма"]
+    }
+  ],
+  "secondPassFields": [
+    {
+      "id": "addendum_number",
+      "label": "Номер доп соглашения",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["addendumNumber", "номер доп соглашения"]
+    },
+    {
+      "id": "new_amount",
+      "label": "Новая сумма/условия",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["newAmount", "новая сумма"]
+    }
+  ],
+  "validationRules": [
+    "Ссылка на основной договор обязательна."
+  ],
+  "crmNaming": {
+    "template": "Доп. Соглашение от {addendum_date} к договору УПТ {contract_number} от {contract_date}"
+  },
+  "outputNaming": {
+    "template": "Доп. Соглашение от {addendum_date} к договору УПТ {contract_number} от {contract_date}"
+  }
+}

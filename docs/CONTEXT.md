@@ -79,13 +79,18 @@ pm run ui`;
 
 ## Активные типы документов
 
-Сейчас в MVP зарегистрированы только реальные типы:
+Сейчас зарегистрированы реальные типы (MVP + УПТ-блок 2026-08-23):
 
 | Technical key | Название | Обязательные поля |
 |---|---|---|
 | `egrul_extract` | Выписка из ЕГРЮЛ | `ogrn`, `registration_record_date`, `short_name_ru` |
 | `vehicle_registration_certificate` | Свидетельство о регистрации ТС | `vin`, `vehicle_number` |
 | `traffic_accident_participants` | Сведения об участниках ДТП | `accident_location`, `accident_date` |
+| `upt_rights` | Договор уступки прав (УПТ) | `contract_number`, `contract_date`, `debtor` |
+| `upt_costs` | Договор уступки на судебные расходы (УПТЮ) | `contract_number`, `contract_date`, `debtor` |
+| `upt_act` | Акт приёма-передачи по договору УПТ | `contract_number`, `contract_date` |
+| `upt_notify` | Уведомление об уступке прав | `contract_number`, `contract_date` |
+| `upt_add` | Дополнительное соглашение к УПТ | `addendum_date`, `contract_number`, `contract_date` |
 
 Входящие имена файлов не используются для:
 
@@ -156,6 +161,46 @@ accident_location понимается как "Место ДТП", потому 
 ```text
 Сведения об участниках ДТП {accident_date}
 ```
+
+### Договор уступки прав (УПТ) / УПТЮ
+
+Поля:
+
+```text
+contract_number* (напр. 28/12/2023/УПТ-8, слэши в Windows станут пробелами)
+contract_date* (дата договора)
+debtor* (должник, обязательно)
+cedent (цедент, желательно)
+cessionary (цессионарий, желательно)
+amount (цена цессии, желательно)
+```
+
+Имя файла:
+
+```text
+Договор УПТ {contract_number} от {contract_date}
+Договор УПТЮ {contract_number} от {contract_date}
+```
+
+### Акт / Уведомление / Доп соглашение по УПТ
+
+Поля:
+
+```text
+upt_act: contract_number, contract_date (ссылка на основной договор УПТ, из заголовка и фразы п.п. 3.3.2)
+upt_notify: contract_number, contract_date (из текста п.3 ст.382 ГК и приложения (копия))
+upt_add: addendum_date + contract_number/contract_date (ссылка на основной договор)
+```
+
+Имя файла:
+
+```text
+Акт приема-передачи документов по договору УПТ {contract_number} от {contract_date}
+Уведомление о договоре УПТ {contract_number} от {contract_date}
+Доп. Соглашение от {addendum_date} к договору УПТ {contract_number} от {contract_date}
+```
+
+Windows: слэши режет `sanitizeFileNamePart` `write-output.js:14`. Три акта заказчика объединены в один тип `upt_act` (aliases).
 
 ---
 
@@ -252,18 +297,31 @@ Thinking — экспериментально, пока отключено.
 
 ### RouterAI / OpenRouter-совместимые провайдеры — важно
 
-Для моделей с `disableThinking: true` (Qwen3 и аналоги) провайдеры типа RouterAI.ru требуют явного параметра:
+Для моделей с `disableThinking: true` (Qwen3 и аналоги) RouterAI.ru требует:
 
 ```json
-{ "reasoning_effort": "none" }
+{ "reasoning": { "effort": "none" } }
 ```
 
-В `src/lib/llm.js` при `disableThinking: true` отправляется тройная защита:
+В `src/lib/llm.js:150` при `disableThinking: true` отправляется (проверено 2026-08-23 на `qwen/qwen3.6-35b-a3b`):
 
 ```js
-body.thinking = { type: 'disabled', budget_tokens: 0 }; // Anthropic / vLLM
-body.reasoning_effort = 'none';                          // OpenRouter / RouterAI
+body.reasoning = { effort: "none" };           // RouterAI канон (PDFtoText/converter.go)
+body.reasoning_effort = "none";                // OpenRouter алиас
+body.chat_template_kwargs = { enable_thinking: false }; // LM Studio / Ollama
+body.thinking = { type: 'disabled', ... }      // Anthropic
 ```
+
+Без `reasoning` — `370+ reasoning_tokens` и `0.04₽`, с ним — `0 tokens` и `0.0012₽` (×30 экономия).
+
+### Офисный Ollama — быстрый переезд (2026-08-23)
+
+IP сервера вводится одним из двух способов (без правки кода):
+
+1) UI: `npm run ui` → Config → `llm.profiles.prod-ollama.baseUrl`
+2) `.env`: `OLLAMA_BASE_URL=http://192.168.1.100:11434/v1` + `DOCUMIND_ACTIVE_PROFILE=prod-ollama` — приоритет у `.env` (`src/lib/llm.js:104`, `config/config.jsonc:59`)
+
+MoE `qwen3.6:35b-a3b` активно ~3B — на GTX 1660 6GB ~10 т/с, на офисном RTX 5070 16GB `num_ctx 32768` летает (см. `Ollama.md`).
 
 Если видишь ошибку `Missing API key env variable: ROUTERAI_API_KEY` при правильно прописанном ключе — смотри не `.env`, а функцию `getEnvValue` в `src/lib/llm.js`: она может читать переменные не из `process.env`.
 
@@ -439,11 +497,18 @@ ormalize-fields` исправлен.
 - `docId` больше не строится из имени входящего файла.
 - Добавлены реальные output naming templates.
 
+### Fixed 2026-08-23
+
+- Thinking Qwen: `reasoning: {effort:"none"}` `src/lib/llm.js:181` (проверено на `qwen/qwen3.6-35b-a3b` через RouterAI, 0 tokens vs 370) — `knowledge/routerai-api.md:44`.
+- Ollama `num_ctx 32768` в `config.jsonc:67` + `llm.js:198` `options.num_ctx` + `OLLAMA_BASE_URL`/`DOCUMIND_ACTIVE_PROFILE` env-override `llm.js:104` для офиса; MoE 35B A3B на 5070 16GB ок (`Ollama.md:49`).
+- УПТ-блок заказчика: 5 типов `upt_*` с 6 полями и `outputNaming` по ТЗ, слэши режет `sanitizeFileNamePart` `write-output.js:14`.
+- LLM resilience: ретрай 3× `429`/`5xx`/`Abort` + `response.json()` под таймаутом `llm.js:205`.
+- `collectFields` depth>20, golden flat fields — ранее.
+
 ### Still open
 
-- Нет полноценного golden set на реальных документах.
-- Ollama office server ещё нужно проверить (num_ctx добавлен в код и конфиг — см. Ollama.md).
-- Таймаут в `llm.js` не покрывает `response.json()`.
+- Нет полноценного golden set на реальных документах (нужны fixtures для УПТ).
+- Ollama office server — проверить вживую `num_ctx 32768` на 5070 после `git pull` (IP через `.env`).
 - Lifecycle сессии размазан между orchestrator и LLM components.
 - `shouldSendImage` лучше сделать более явным.
 - `configDoctor` не проверяет дубликаты `step.id`.

@@ -6,7 +6,10 @@ const state = {
   pipeline: [],
   selectedDocType: null,
   selectedPrompt: null,
-  selectedFieldMapping: null
+  selectedFieldMapping: null,
+  verifyItems: [],
+  selectedVerify: null,
+  verifyPdfMode: 'input'
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -274,6 +277,77 @@ async function openFile(filePath) {
   $('#file-preview').textContent = text;
 }
 
+async function loadVerify() {
+  const result = await api('/api/verify/list');
+  state.verifyItems = result.items;
+  $('#verify-count').textContent = `${result.items.length} документов`;
+  renderVerifyList();
+  if (result.items.length && !state.selectedVerify) selectVerify(result.items[0].docId || result.items[0].inputName);
+  setStatus('Проверка загружена');
+}
+
+function renderVerifyList() {
+  const list = $('#verify-list');
+  list.innerHTML = state.verifyItems.map((item) => {
+    const active = (state.selectedVerify && (state.selectedVerify.docId === item.docId || state.selectedVerify.inputName === item.inputName)) ? 'active' : '';
+    const badge = item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error';
+    const type = item.docType || '—';
+    const name = item.inputName || item.docId || 'unknown';
+    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}">
+      <div class="verify-item-title">${escapeHtml(name)}</div>
+      <div class="small">${escapeHtml(type)} <span class="badge ${badge}">${escapeHtml(item.status)}</span> ${item.confidence ? '· ' + item.confidence : ''}</div>
+    </button>`;
+  }).join('');
+}
+
+function selectVerify(idOrName) {
+  const item = state.verifyItems.find((x) => x.docId === idOrName || x.inputName === idOrName);
+  if (!item) return;
+  state.selectedVerify = item;
+  renderVerifyList();
+  $('#verify-doc-title').textContent = `${item.inputName || ''} → ${item.docType || 'не обработан'}`;
+  $('#verify-confidence').textContent = item.confidence ? `conf ${item.confidence}` : '';
+  $('#verify-confidence').className = 'badge ' + (item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error');
+  $('#verify-json').textContent = prettyJson(item.json || { status: item.status, fields: item.fields });
+  // fields table
+  const fields = item.fields || {};
+  $('#verify-fields').innerHTML = Object.entries(fields).length
+    ? `<table class="verify-table"><tr><th>поле</th><th>значение</th></tr>${Object.entries(fields).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(Array.isArray(v) ? v.join(', ') : String(v ?? '—'))}</td></tr>`).join('')}</table>`
+    : '<div class="small">нет полей</div>';
+  showVerifyPdf();
+}
+
+function showVerifyPdf() {
+  const item = state.selectedVerify;
+  if (!item) return;
+  const iframe = $('#verify-pdf');
+  let src = '';
+  if (state.verifyPdfMode === 'input' && item.inputFile) {
+    const rel = item.inputFile.split(/input[\\/]/).pop() || item.inputName;
+    src = `/api/raw/input/${encodeURIComponent(rel)}`;
+  } else if (state.verifyPdfMode === 'output' && item.outputPdfPath) {
+    const rel = item.outputPdfPath.split(/output[\\/]/).pop() || '';
+    src = `/api/raw/output/${encodeURIComponent(rel)}`;
+  } else if (item.assembledPdf) {
+    const rel = item.assembledPdf.split(/staging[\\/]/).pop();
+    // staging has subdir docId/assembled/page-001.jpg etc, serve via raw staging
+    const parts = item.assembledPdf.split(pathSepForUrl(item.assembledPdf));
+    // fallback to input if no output
+    src = item.inputFile ? `/api/raw/input/${encodeURIComponent(item.inputName)}` : '';
+  }
+  // direct: use inputFile basename for input, output pdf name for output
+  if (state.verifyPdfMode === 'input') {
+    src = `/api/raw/input/${encodeURIComponent(item.inputName)}`;
+  } else {
+    const outName = item.json?.pdfFileName || (item.outputPdfPath ? item.outputPdfPath.split(/[\\/]/).pop() : null);
+    src = outName ? `/api/raw/output/${encodeURIComponent(outName)}` : `/api/raw/input/${encodeURIComponent(item.inputName)}`;
+  }
+  iframe.src = src;
+  document.querySelectorAll('[data-verify-pdf]').forEach((b) => b.classList.toggle('active', b.dataset.verifyPdf === state.verifyPdfMode));
+}
+
+function pathSepForUrl(p) { return p.includes('\\') ? '\\' : '/'; }
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -335,6 +409,19 @@ document.addEventListener('click', async (event) => {
 
   const file = event.target.closest('[data-file]');
   if (file) await openFile(file.dataset.file);
+
+  const verifyItem = event.target.closest('[data-verify-id],[data-verify-name]');
+  if (verifyItem) {
+    const id = verifyItem.dataset.verifyId || verifyItem.dataset.verifyName;
+    selectVerify(id);
+  }
+  const verifyPdfBtn = event.target.closest('[data-verify-pdf]');
+  if (verifyPdfBtn) {
+    state.verifyPdfMode = verifyPdfBtn.dataset.verifyPdf;
+    showVerifyPdf();
+  }
+  const verifyAction = event.target.closest('[data-action="verify-reload"]');
+  if (verifyAction) await loadVerify();
 });
 
 document.addEventListener('change', async (event) => {
@@ -353,7 +440,8 @@ async function init() {
     await loadPipeline();
     await loadDocTypes();
     await loadPrompts();
-    showTab('config');
+    try { await loadVerify(); } catch (e) { console.warn('verify load failed', e); }
+    showTab('verify');
     setStatus('Ready');
   } catch (error) {
     console.error(error);

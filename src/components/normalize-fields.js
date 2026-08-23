@@ -122,6 +122,7 @@ export async function run(context) {
 
   const errors = [];
   for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {
+    if (!field.required) continue;
     if (typedFields[field.id] === undefined || typedFields[field.id] === null || typedFields[field.id] === '') {
       errors.push(makeError('REQUIRED_FIELD_MISSING', `Required field is missing: ${field.id}`, meta.id, {
         recoverable: true,

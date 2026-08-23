@@ -105,7 +105,13 @@ export async function buildUniversalPrompt(config, docTypes) {
 }
 
 export async function buildSpecificPrompt(config, docType, previousResult) {
-  const template = await readTemplate(config, 'specific');
+  // Per-type prompt base: config/prompts/templates/types/<type>.md, fallback to specific.md
+  let template;
+  try {
+    template = await readTemplate(config, `types/${docType.type}`);
+  } catch {
+    template = await readTemplate(config, 'specific');
+  }
   return render(template, {
     docType: docType.type,
     docTypeName: docType.name,

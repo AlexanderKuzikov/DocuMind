@@ -23,6 +23,7 @@
     <button data-tab="prompts">Prompts</button>
     <button data-tab="run">Run</button>
     <button data-tab="files">Files</button>
+    <button data-tab="verify">Проверка</button>
   </nav>
 
   <main>
@@ -133,6 +134,35 @@
       <div class="two-col">
         <div id="file-list" class="list"></div>
         <pre id="file-preview"></pre>
+      </div>
+    </section>
+
+    <section id="tab-verify" class="tab">
+      <div class="hint">
+        <b>Проверка:</b> визуальный контроль — слева исходный PDF, справа извлечённый JSON. Сравни данные с документом. На обрыв/падение модели смотри <code>debug/&lt;docId&gt;</code>.
+      </div>
+      <div class="toolbar">
+        <button data-action="verify-reload">Обновить</button>
+        <span id="verify-count" class="small"></span>
+      </div>
+      <div class="verify-layout">
+        <aside class="verify-list" id="verify-list"></aside>
+        <div class="verify-main">
+          <div class="verify-pdf-bar">
+            <button data-verify-pdf="input" class="active">Исходник</button>
+            <button data-verify-pdf="output">Собранный PDF</button>
+            <span id="verify-doc-title" class="small"></span>
+          </div>
+          <iframe id="verify-pdf" class="verify-pdf"></iframe>
+          <div class="verify-json">
+            <div class="toolbar">
+              <span id="verify-json-title">JSON</span>
+              <span id="verify-confidence" class="badge"></span>
+            </div>
+            <pre id="verify-json"></pre>
+            <div id="verify-fields" class="verify-fields"></div>
+          </div>
+        </div>
       </div>
     </section>
   </main>

@@ -102,12 +102,25 @@ export class LlmClient {
   }
 
   getActiveProfile() {
-    const profileName = this.config.llm.activeProfile;
-    const profile = this.config.llm.profiles[profileName];
-    if (!profile) {
+    // Env override for office: DOCUMIND_ACTIVE_PROFILE=prod-ollama
+    const envProfile = getEnvValue('DOCUMIND_ACTIVE_PROFILE');
+    const profileName = envProfile || this.config.llm.activeProfile;
+    const base = this.config.llm.profiles[profileName];
+    if (!base) {
       throw new Error(`Unknown LLM profile: ${profileName}`);
     }
-    return { name: profileName, ...profile };
+    const profile = { ...base, name: profileName };
+    // Env override for Ollama IP: OLLAMA_BASE_URL=http://192.168.1.100:11434/v1
+    if (profile.baseUrlEnv) {
+      const envUrl = getEnvValue(profile.baseUrlEnv);
+      if (envUrl) profile.baseUrl = envUrl;
+    }
+    // Fallback generic env for any profile
+    const genericEnvUrl = getEnvValue('OLLAMA_BASE_URL');
+    if (profileName === 'prod-ollama' && genericEnvUrl && !getEnvValue(profile.baseUrlEnv || '')) {
+      profile.baseUrl = genericEnvUrl;
+    }
+    return profile;
   }
 
   async createSession() {
@@ -150,29 +163,36 @@ export class LlmClient {
     const disableThinking = this.config.llm.disableThinking === true;
     const thinkingEnabled = !disableThinking && (this.config.llm.thinking?.enabled === true);
 
+    const effortMap = { off: 'none', none: 'none', low: 'low', medium: 'medium', high: 'high', minimal: 'minimal', max: 'max', xhigh: 'xhigh' };
+    let reasoningEffort;
+    if (disableThinking) reasoningEffort = 'none';
+    else if (thinkingEnabled) {
+      const raw = String(this.config.llm.thinking?.effort || 'medium').toLowerCase();
+      reasoningEffort = effortMap[raw] || 'medium';
+    } else {
+      reasoningEffort = 'none';
+    }
+
     const body = {
       model: profile.model,
       messages: session.messages,
       temperature: this.config.llm.temperature ?? profile.temperature ?? 0,
       stream: profile.stream ?? this.config.llm.stream ?? false,
-      // Qwen3 requires chat_template_kwargs to actually toggle thinking mode.
-      // This works for LM Studio, Ollama, and vLLM with Qwen3 models.
-      chat_template_kwargs: { enable_thinking: thinkingEnabled }
+      // Primary: RouterAI / OpenRouter — reasoning.effort (см. knowledge/routerai-api.md, PDFtoText/converter.go:buildParams)
+      reasoning: { effort: reasoningEffort },
+      // Compat: OpenRouter alias
+      reasoning_effort: reasoningEffort,
+      // LM Studio / Ollama / vLLM — Qwen3 chat template
+      chat_template_kwargs: { enable_thinking: reasoningEffort !== 'none' }
     };
 
-    if (thinkingEnabled) {
+    if (reasoningEffort === 'none') {
+      body.thinking = { type: 'disabled', budget_tokens: 0 };
+    } else {
       body.thinking = {
         type: 'enabled',
         budget_tokens: this.config.llm.thinking.budgetTokens ?? 4096
       };
-    } else {
-      // Three-layer suppression for routers/proxies (e.g. RouterAI/AtlasCloud)
-      // that ignore chat_template_kwargs:
-      // 1. thinking.type=disabled — Anthropic-style
-      // 2. budget_tokens=0 — vLLM/Ollama style
-      // 3. reasoning_effort=none — OpenRouter/OpenAI-o-series style
-      body.thinking = { type: 'disabled', budget_tokens: 0 };
-      body.reasoning_effort = 'none';
     }
 
     // Ollama num_ctx override - critical for legal documents.
@@ -183,34 +203,59 @@ export class LlmClient {
     }
 
     const timeoutMs = profile.timeout || this.config.llm.timeout || 180000;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    let response;
-    try {
-      response = await fetch(`${profile.baseUrl.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-    } catch (err) {
-      clearTimeout(timeout);
-      throw err;
-    }
-
-    if (!response.ok) {
-      clearTimeout(timeout);
-      const text = await response.text().catch(() => '');
-      throw new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
-    }
-
+    const bodyJson = JSON.stringify(body);
+    let lastErr;
     let json;
-    try {
-      json = await response.json();
-    } finally {
-      clearTimeout(timeout);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        const delay = attempt * 2000;
+        await new Promise((r) => setTimeout(r, delay));
+      }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      let response;
+      try {
+        response = await fetch(`${profile.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: bodyJson,
+          signal: controller.signal
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        lastErr = err;
+        const isAbort = err.name === 'AbortError';
+        if (isAbort || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
+          if (attempt < 2) continue;
+        }
+        throw err;
+      }
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        clearTimeout(timeout);
+        if (response.status === 429 || response.status >= 500) {
+          lastErr = new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
+          if (attempt < 2) continue;
+        }
+        throw new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
+      }
+
+      try {
+        // timeout covers response.json() too
+        const jsonPromise = response.json();
+        const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('LLM response.json timeout')), timeoutMs));
+        json = await Promise.race([jsonPromise, timeoutPromise]);
+        clearTimeout(timeout);
+        break;
+      } catch (err) {
+        clearTimeout(timeout);
+        lastErr = err;
+        if (attempt < 2) continue;
+        throw err;
+      }
     }
+    if (!json) throw lastErr || new Error('LLM request failed after retries');
 
     const rawContent = json.choices?.[0]?.message?.content;
     const contentText = normalizeContent(rawContent);

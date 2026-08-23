@@ -152,6 +152,17 @@ Purpose in the legacy two-pass pipeline:
 
 It is still present for future use, but it is not the active MVP prompt.
 
+## Per-type prompt base (2026-08-23, для 139 типов)
+
+База: `config/prompts/templates/types/<docType>.md` — один файл на тип, пополняется по мере добавления типов.
+
+* `universal.md` — прогон 1: определяет `docType` по `recognitionFeatures` + `firstPassFields` (якоря для имени). Лёгкий, ~3k токенов даже на 139 типов.
+* `types/<type>.md` — прогон 2: детальное извлечение уже для известного типа. `prompt-builder.js:107` `buildSpecificPrompt` сначала пробует `types/<type>.md`, fallback — `specific.md`.
+
+Пример `types/upt_rights.md` — заголовок + `{{previousResult}}` + `{{secondPassFields}}` (только этого типа) + `{{validationRules}}` + тип-специфичные подсказки (УПТ без Ю, должник обязателен). Добавить новый тип = `config/doc_types/<new>.json` + `config/prompts/templates/types/<new>.md` — без правки кода, UI `npm run ui` → Prompts уже видит `types/`.
+
+Текущая база (8 типов): `egrul_extract`, `vehicle_registration_certificate`, `traffic_accident_participants`, `upt_rights`, `upt_costs`, `upt_act` (унифицирован из 3 папок), `upt_notify`, `upt_add`. Масштаб `структура.txt` — 10421 файлов, 14 групп, 139 типов — держится за счёт двухпрохода.
+
 ## Legacy specific / legal extraction prompt
 
 Template:
@@ -160,7 +171,7 @@ Template:
 config/prompts/templates/specific.md
 ```
 
-Purpose in the legacy two-pass pipeline:
+Fallback для типов без своего файла в `types/`:
 
 ```text
 - extract everything that may be legally useful;
@@ -169,8 +180,6 @@ Purpose in the legacy two-pass pipeline:
 - return strict JSON;
 - do not add prose.
 ```
-
-It is intentionally broad and is disabled in the current MVP pipeline.
 
 ## Unknown prompt
 

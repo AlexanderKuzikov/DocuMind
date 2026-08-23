@@ -1,0 +1,240 @@
+{
+  "type": "upt_rights",
+  "name": "Договор уступки прав (УПТ)",
+  "aliases": [
+    "Договор уступки прав",
+    "Договор УПТ",
+    "УПТ"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Договор уступки прав (требования)» с аббревиатурой УПТ.",
+    "Номер с суффиксом УПТ (например, 05-08-2024-УПТ-2), без Ю.",
+    "Предмет: уступка прав требования возмещения ущерба ДТП.",
+    "Стороны: цедент (потерпевший) и цессионарий."
+  ],
+  "fields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Номер договора УПТ, например 28/12/2023/УПТ-8. Брать из заголовка или шапки.",
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата договора УПТ, например 28.12.2023. Брать из заголовка рядом с номером.",
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "debtor",
+      "label": "Должник",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Должник — лицо, к которому уступается требование (виновник ДТП/страховая).",
+      "aliases": ["debtor_name", "должник"]
+    },
+    {
+      "id": "cedent",
+      "label": "Цедент",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Цедент — уступающий право (потерпевший). Желательно.",
+      "aliases": ["cedent_name", "цедент"]
+    },
+    {
+      "id": "cessionary",
+      "label": "Цессионарий",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Цессионарий — принимающий право. Желательно.",
+      "aliases": ["cessionary_name", "цессионарий", "цессионер"]
+    },
+    {
+      "id": "amount",
+      "label": "Сумма уступаемого требования (Цена цессии)",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Сумма/цена цессии, например 150000 руб. Желательно, брать как в договоре.",
+      "aliases": ["cession_price", "price", "сумма", "цена цессии"]
+    },
+    {
+      "id": "vehicle_number",
+      "label": "Госномер ТС",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim", "uppercase"],
+      "extractionHint": "Госномер автомобиля из договора (если указан), например Р091ВР159.",
+      "aliases": ["vehicleNumber", "госномер", "номер ТС"]
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "extractionHint": "Дата ДТП, послужившего основанием требования (если указана в предмете).",
+      "aliases": ["dtp_date", "дата дтп", "accidentDate"]
+    },
+    {
+      "id": "accident_location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Место ДТП как в договоре (адрес/трасса/ориентир).",
+      "aliases": ["accident_place", "место дтп", "accidentLocation"]
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "debtor",
+      "label": "Должник",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["debtor_name", "должник"]
+    },
+    {
+      "id": "cedent",
+      "label": "Цедент",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cedent_name", "цедент"]
+    },
+    {
+      "id": "cessionary",
+      "label": "Цессионарий",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cessionary_name", "цессионарий", "цессионер"]
+    },
+    {
+      "id": "amount",
+      "label": "Сумма уступаемого требования (Цена цессии)",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cession_price", "price", "сумма", "цена цессии"]
+    },
+    {
+      "id": "vehicle_number",
+      "label": "Госномер ТС",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim", "uppercase"],
+      "aliases": ["vehicleNumber", "госномер", "номер ТС"]
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["dtp_date", "дата дтп"]
+    },
+    {
+      "id": "accident_location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["accident_place", "место дтп"]
+    }
+  ],
+  "secondPassFields": [
+    {
+      "id": "debtor",
+      "label": "Должник",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["debtor_name", "должник"]
+    },
+    {
+      "id": "cedent",
+      "label": "Цедент",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cedent_name", "цедент"]
+    },
+    {
+      "id": "cessionary",
+      "label": "Цессионарий",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cessionary_name", "цессионарий"]
+    },
+    {
+      "id": "amount",
+      "label": "Сумма уступаемого требования",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["cession_price", "price", "сумма"]
+    },
+    {
+      "id": "vehicle_number",
+      "label": "Госномер ТС",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim", "uppercase"],
+      "aliases": ["vehicleNumber", "госномер"]
+    },
+    {
+      "id": "accident_date",
+      "label": "Дата ДТП",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["dtp_date", "дата дтп"]
+    },
+    {
+      "id": "accident_location",
+      "label": "Место ДТП",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["accident_place", "место дтп"]
+    }
+  ],
+  "validationRules": [
+    "Номер должен содержать УПТ без Ю, например 28/12/2023/УПТ-8.",
+    "Должник обязателен."
+  ],
+  "crmNaming": {
+    "template": "Договор УПТ {contract_number} от {contract_date}"
+  },
+  "outputNaming": {
+    "template": "Договор УПТ {contract_number} от {contract_date}"
+  }
+}

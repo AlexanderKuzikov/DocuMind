@@ -170,10 +170,98 @@ async function listJsonFiles(dirPath) {
 
 async function listPromptFiles(dirPath) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  return entries
+  const files = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((entry) => path.join(dirPath, entry.name));
+  // types subdir for per-type prompts
+  try {
+    const typesDir = path.join(dirPath, 'types');
+    const typeEntries = await fs.readdir(typesDir, { withFileTypes: true });
+    const typeFiles = typeEntries
+      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((e) => path.join(typesDir, e.name));
+    return [...files, ...typeFiles].sort((a, b) => a.localeCompare(b));
+  } catch {
+    return files;
+  }
+}
+
+async function listVerifyDocuments(config) {
+  const stagingDir = resolveConfigPath(config, config.paths.staging);
+  const outputDir = resolveConfigPath(config, config.paths.output);
+  const inputDir = resolveConfigPath(config, config.paths.input);
+  const items = [];
+  // scan output jsons as primary
+  try {
+    const outEntries = await fs.readdir(stagingDir, { withFileTypes: true });
+    for (const entry of outEntries.filter((e) => e.isDirectory())) {
+      const manifestPath = path.join(stagingDir, entry.name, 'manifest.json');
+      let manifest = null;
+      try { manifest = JSON.parse(await readTextFile(manifestPath)); } catch {}
+      const docId = entry.name;
+      // find output json by docId
+      let outputJson = null;
+      let outputPath = null;
+      try {
+        const outFiles = await fs.readdir(outputDir, { withFileTypes: true });
+        for (const f of outFiles.filter((x) => x.isFile() && x.name.endsWith('.json'))) {
+          const p = path.join(outputDir, f.name);
+          try {
+            const j = JSON.parse(await readTextFile(p));
+            if (j.docId === docId) { outputJson = j; outputPath = p; break; }
+          } catch {}
+        }
+      } catch {}
+      // fallback: read output.json from debug/config
+      let debugJson = null;
+      try {
+        const dbg = resolveConfigPath(config, './debug');
+        const dbgPath = path.join(dbg, docId, 'output.json');
+        debugJson = JSON.parse(await readTextFile(dbgPath));
+      } catch {}
+      const finalJson = outputJson || debugJson;
+      items.push({
+        docId,
+        inputFile: manifest?.source?.[0]?.path || manifest?.source?.path || null,
+        inputName: manifest?.source?.[0]?.name || (manifest?.source?.path ? path.basename(manifest.source.path) : null),
+        assembledPdf: manifest?.assembledPdf?.path || null,
+        outputJsonPath: outputPath,
+        outputPdfPath: finalJson?.pdfFileName ? path.join(outputDir, finalJson.pdfFileName) : null,
+        docType: finalJson?.docType || null,
+        docTypeName: finalJson?.docTypeName || null,
+        status: finalJson?.status || 'unknown',
+        confidence: finalJson?.confidence ?? null,
+        fields: finalJson ? Object.fromEntries(Object.entries(finalJson).filter(([k]) => !['docId','docType','docTypeName','status','confidence','createdAt','pdfFileName','jsonFileName','outputNaming'].includes(k))) : null,
+        json: finalJson
+      });
+    }
+  } catch {}
+  // also include input files without staging (not yet processed)
+  try {
+    const inEntries = await fs.readdir(inputDir, { withFileTypes: true });
+    const stagedInputs = new Set(items.map((i) => i.inputFile && path.basename(i.inputFile)).filter(Boolean));
+    for (const e of inEntries.filter((x) => x.isFile() && /\.(pdf|png|jpg|jpeg|webp)$/i.test(x.name))) {
+      if (!stagedInputs.has(e.name)) {
+        items.push({
+          docId: null,
+          inputFile: path.join(inputDir, e.name),
+          inputName: e.name,
+          assembledPdf: null,
+          outputJsonPath: null,
+          outputPdfPath: null,
+          docType: null,
+          docTypeName: null,
+          status: 'not_processed',
+          confidence: null,
+          fields: null,
+          json: null
+        });
+      }
+    }
+  } catch {}
+  return items.sort((a, b) => (a.inputName || '').localeCompare(b.inputName || '', 'ru'));
 }
 
 async function scanComponents(config) {
@@ -289,7 +377,7 @@ async function handleApi(req, res, config) {
       const dir = resolveConfigPath(freshConfig, freshConfig.paths.prompts);
       const files = await listPromptFiles(dir);
       const items = await Promise.all(files.map(async (file) => ({
-        name: path.basename(file),
+        name: path.relative(dir, file).replace(/\\/g, '/'),
         path: file,
         content: await readTextFile(file)
       })));
@@ -343,6 +431,34 @@ async function handleApi(req, res, config) {
       }
       const file = safeJoin(base, relative);
       return sendText(res, 200, 'application/json; charset=utf-8', await readTextFile(file));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/verify/list') {
+      const freshConfig = await loadConfig('config/config.jsonc');
+      const items = await listVerifyDocuments(freshConfig);
+      return sendJson(res, 200, { ok: true, items });
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/api/raw/')) {
+      const kind = url.pathname.split('/')[3]; // input | output | staging
+      const freshConfig = await loadConfig('config/config.jsonc');
+      let base;
+      if (kind === 'input') base = resolveConfigPath(freshConfig, freshConfig.paths.input);
+      else if (kind === 'output') base = resolveConfigPath(freshConfig, freshConfig.paths.output);
+      else if (kind === 'staging') base = resolveConfigPath(freshConfig, freshConfig.paths.staging);
+      else throw new Error('Unknown raw kind');
+      const relative = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
+      if (!relative) throw new Error('Missing file path');
+      const file = safeJoin(base, relative);
+      const data = await fs.readFile(file);
+      const ext = path.extname(file).toLowerCase();
+      let ct = 'application/octet-stream';
+      if (ext === '.pdf') ct = 'application/pdf';
+      else if (ext === '.json') ct = 'application/json; charset=utf-8';
+      else if (ext === '.jpg' || ext === '.jpeg') ct = 'image/jpeg';
+      else if (ext === '.png') ct = 'image/png';
+      res.writeHead(200, { 'content-type': ct, 'content-length': data.length });
+      return res.end(data);
     }
 
     return sendJson(res, 404, { ok: false, error: 'Not found' });

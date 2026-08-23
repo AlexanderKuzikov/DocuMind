@@ -1,0 +1,135 @@
+{
+  "type": "upt_act",
+  "name": "Акт приёма-передачи (по УПТ)",
+  "aliases": [
+    "Акт приёма-передачи",
+    "Акт приема-передачи",
+    "Акт приёма-передачи документов",
+    "Акт приема передачи документов",
+    "Акт УПТ",
+    "Акт приёма-передачи по УПТ",
+    "Акт по УПТ"
+  ],
+  "recognitionFeatures": [
+    "Заголовок «Акт приёма-передачи» или «Акт приёма-передачи документов» с упоминанием УПТ (не УПТЮ).",
+    "Ссылка на договор УПТ: в заголовке «№ 28/12/2023/УПТ-8» и в тексте «подпунктом 3.3.2. Договора уступки права требования № 28/12/2023/УПТ-8 от 28.12.2023» (объединяет 3 папки заказчика).",
+    "Неотъемлемая часть Договора УПТ (не путать с УПТЮ).",
+    "1-2 страницы, подписи цедента/цессионария, печать."
+  ],
+  "fields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ (основного)",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "extractionHint": "Номер основного договора УПТ, например 28/12/2023/УПТ-8. Брать из заголовка или фразы 'Договора уступки права требования № ...'. Слэши сохранять как в документе.",
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора УПТ (основного)",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "extractionHint": "Дата основного договора УПТ, например 28.12.2023. Рядом с номером.",
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "act_date",
+      "label": "Дата акта",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "extractionHint": "Дата самого акта (если указана внизу, рядом с подписями).",
+      "aliases": ["actDate", "дата акта"]
+    },
+    {
+      "id": "act_number",
+      "label": "Номер акта",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "extractionHint": "Номер акта приёма-передачи (если отличается от номера договора).",
+      "aliases": ["actNumber", "номер акта"]
+    },
+    {
+      "id": "document_list",
+      "label": "Перечень передаваемых документов",
+      "type": "array",
+      "required": false,
+      "normalization": [],
+      "extractionHint": "Список документов из акта: договор, уведомление, претензия и т.д. Вернуть массивом строк.",
+      "aliases": ["documents", "перечень документов"]
+    }
+  ],
+  "firstPassFields": [
+    {
+      "id": "contract_number",
+      "label": "Номер договора УПТ (основного)",
+      "type": "string",
+      "required": true,
+      "normalization": ["trim"],
+      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+    },
+    {
+      "id": "contract_date",
+      "label": "Дата договора УПТ (основного)",
+      "type": "date",
+      "required": true,
+      "normalization": ["date"],
+      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+    },
+    {
+      "id": "act_date",
+      "label": "Дата акта",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["actDate", "дата акта"]
+    },
+    {
+      "id": "act_number",
+      "label": "Номер акта",
+      "type": "string",
+      "required": false,
+      "normalization": ["trim"],
+      "aliases": ["actNumber", "номер акта"]
+    },
+    {
+      "id": "document_list",
+      "label": "Перечень передаваемых документов",
+      "type": "array",
+      "required": false,
+      "normalization": [],
+      "aliases": ["documents", "перечень документов"]
+    }
+  ],
+  "secondPassFields": [
+    {
+      "id": "act_date",
+      "label": "Дата акта",
+      "type": "date",
+      "required": false,
+      "normalization": ["date"],
+      "aliases": ["actDate", "дата акта"]
+    },
+    {
+      "id": "document_list",
+      "label": "Перечень передаваемых документов",
+      "type": "array",
+      "required": false,
+      "normalization": [],
+      "aliases": ["documents", "перечень документов"]
+    }
+  ],
+  "validationRules": [
+    "Акт всегда ссылается на договор УПТ (не УПТЮ). Номер содержит УПТ без Ю."
+  ],
+  "crmNaming": {
+    "template": "Акт приема-передачи документов по договору УПТ {contract_number} от {contract_date}"
+  },
+  "outputNaming": {
+    "template": "Акт приема-передачи документов по договору УПТ {contract_number} от {contract_date}"
+  }
+}
