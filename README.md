@@ -35,6 +35,7 @@ npm run ui             # браузерный интерфейс
 
 - [`docs/CONTEXT.md`](docs/CONTEXT.md) — состояние проекта
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — архитектурные решения
+- [`docs/LINUX_OLLAMA.md`](docs/LINUX_OLLAMA.md) — Linux + Ollama on-prem (prod)
 
 ## Статус
 

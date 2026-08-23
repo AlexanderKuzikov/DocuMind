@@ -554,3 +554,5 @@ npm run extract
 npm run ui          # http://127.0.0.1:4173 → Проверка
 npm run test:golden
 ```
+
+См. также [`docs/LINUX_OLLAMA.md`](LINUX_OLLAMA.md) — развёртывание на Linux + Ollama on-prem.
