@@ -29,7 +29,7 @@
     // Default profile for current local experiments with LM Studio.
     // Можно переопределить через .env: DOCUMIND_ACTIVE_PROFILE=prod-ollama
     "activeProfile": "mvp-routerai",
-    "imagePolicy": "each-pass",
+    "imagePolicy": "session",
     "sessionFallback": "each-pass",
     "forceTemperature": 0.1,
     "disableThinking": true,
@@ -72,8 +72,8 @@
     }
   },
   "extraction": {
-    "mode": "two-pass",
-    "secondPassMode": "enabled",
+    "mode": "one-pass",
+    "secondPassMode": "disabled",
     "universalFields": [
       "ogrn",
       "registration_record_date",
@@ -140,14 +140,14 @@
       "order": 5,
       "id": "buildSpecificPrompt",
       "component": "build-specific-prompt",
-      "enabled": true,
+      "enabled": false,
       "required": true
     },
     {
       "order": 6,
       "id": "llmSpecificPass",
       "component": "llm-specific-pass",
-      "enabled": true,
+      "enabled": false,
       "required": true
     },
     {
