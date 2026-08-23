@@ -1,0 +1,15 @@
+{
+  "docId": "dm-20260823171809-c9bc7f11daa6-a6da",
+  "docType": "upt_notify",
+  "docTypeName": "Уведомление об уступке прав",
+  "status": "ok",
+  "confidence": 1,
+  "contract_number": "08/08/2024/УПТ-2",
+  "contract_date": "2024-08-08",
+  "notification_date": null,
+  "recipient": "Копылову Виталию Дмитриевичу",
+  "recipient_address": "614546, Пермский край, с. Курашим, ул. Ключевая, д. 3",
+  "createdAt": "2026-08-23T17:18:13.498Z",
+  "pdfFileName": "Уведомление о договоре УПТ 08 08 2024 УПТ-2 от 2024-08-08.pdf",
+  "jsonFileName": "Уведомление о договоре УПТ 08 08 2024 УПТ-2 от 2024-08-08.json"
+}

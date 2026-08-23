@@ -1,0 +1,19 @@
+{
+  "docId": "dm-20260823171558-e87a3a1bb9e3-998a",
+  "docType": "upt_costs",
+  "docTypeName": "Договор уступки на судебные расходы (УПТЮ)",
+  "status": "ok",
+  "confidence": 1,
+  "contract_number": "06/02/2025/УПТЮ-1",
+  "contract_date": "2025-02-06",
+  "debtor": "АО \"Почта России\"",
+  "cedent": "ООО \"Консалт Плюс\"",
+  "cessionary": "Баранов Андрей Владимирович",
+  "amount": "55 000 руб. 00 коп.",
+  "accident_date": "2024-11-21",
+  "vehicle_number": null,
+  "accident_location": null,
+  "createdAt": "2026-08-23T17:16:18.899Z",
+  "pdfFileName": "Договор УПТЮ 06 02 2025 УПТЮ-1 от 2025-02-06_001.pdf",
+  "jsonFileName": "Договор УПТЮ 06 02 2025 УПТЮ-1 от 2025-02-06_001.json"
+}
