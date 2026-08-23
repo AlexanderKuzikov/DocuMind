@@ -29,7 +29,7 @@
     // Default profile for current local experiments with LM Studio.
     // Можно переопределить через .env: DOCUMIND_ACTIVE_PROFILE=prod-ollama
     "activeProfile": "mvp-routerai",
-    "imagePolicy": "session",
+    "imagePolicy": "each-pass",
     "sessionFallback": "each-pass",
     "forceTemperature": 0.1,
     "disableThinking": true,
@@ -72,8 +72,8 @@
     }
   },
   "extraction": {
-    "mode": "one-pass",
-    "secondPassMode": "disabled",
+    "mode": "two-pass",
+    "secondPassMode": "enabled",
     "universalFields": [
       "ogrn",
       "registration_record_date",
@@ -138,36 +138,36 @@
     },
     {
       "order": 5,
+      "id": "buildSpecificPrompt",
+      "component": "build-specific-prompt",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 6,
+      "id": "llmSpecificPass",
+      "component": "llm-specific-pass",
+      "enabled": true,
+      "required": true
+    },
+    {
+      "order": 7,
       "id": "normalizeFields",
       "component": "normalize-fields",
       "enabled": true,
       "required": true
     },
     {
-      "order": 6,
+      "order": 8,
       "id": "writeOutput",
       "component": "write-output",
       "enabled": true,
       "required": true
     },
     {
-      "order": 7,
+      "order": 9,
       "id": "rasterizeFirstPage",
       "component": "rasterize-first-page",
-      "enabled": false,
-      "required": false
-    },
-    {
-      "order": 8,
-      "id": "buildSpecificPrompt",
-      "component": "build-specific-prompt",
-      "enabled": false,
-      "required": false
-    },
-    {
-      "order": 9,
-      "id": "llmSpecificPass",
-      "component": "llm-specific-pass",
       "enabled": false,
       "required": false
     }
