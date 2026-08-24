@@ -15,36 +15,31 @@ https://github.com/AlexanderKuzikov/DocuMind
 Текущий статус:
 
 ```text
-MVP one-pass extraction / demo-ready
+УПТ-блок 57 файлов протестирован / two-pass demo-ready / светлая тема
 ```
 
-Это рабочая предварительная версия, но ещё не production-complete система.
+Прогон 24.08: 57 рандом `doc_*.pdf` (02 Цессия) — 57/57 `ok` (one-pass), ранее 29 two-pass 28 `ok` +1 `unknown` честно. `qwen/qwen3.6-35b-a3b` RouterAI `reasoning:none` 0 tokens, `accident_*`/`vehicle_number` доизвлечены.
 
 ---
 
 ## Текущий активный режим
 
-Активный режим:
+Активный режим (включён two-pass `config.jsonc:74`):
 
 ```text
-input/
+input/ (57 рандом)
   → discover-documents
-  → assemble-document-pdf
-  → build-universal-prompt
-  → llm-universal-pass
-  → normalize-fields
+  → assemble-document-pdf (200 DPI JPEG)
+  → build-universal-prompt (универсальный, типы + recognitionFeatures)
+  → llm-universal-pass (тип)
+  → build-specific-prompt (per-type types/<type>.md, fallback specific.md)
+  → llm-specific-pass (поля типа)
+  → normalize-fields (с нормализацией date/trim/uppercase)
   → write-output
-  → output/<имя>.pdf
-  → output/<имя>.json
+  → output/<имя>.pdf + output/<имя>.json
 ```
 
-Старый двухпроходный pipeline не удалён. Он оставлен в `src/components/` и может быть включён позже через config/UI:
-
-```text
-rasterize-first-page
-build-specific-prompt
-llm-specific-pass
-```
+One-pass остаётся в `prompt-builder.js:93` (`mode: one-pass` → `one-pass.md`). `rasterize-first-page` отключён.
 
 ---
 
@@ -52,28 +47,16 @@ llm-specific-pass
 
 На текущем этапе в репозитории есть:
 
-- Node.js проект с `package.json` и `package-lock.json`;
-- CLI entrypoint `src/cli.js`;
-- orchestrator `src/orchestrator.js`;
-- компонентная архитектура в `src/components/`;
-- config-driven pipeline через `config/config.jsonc`;
-- реальные типы документов в `config/doc_types/*.json`;
-- prompt templates в `config/prompts/templates/*.md`;
-- LLM client в `src/lib/llm.js`;
-- сборка документа в единый PDF через `assemble-document-pdf.js`;
-- one-pass docType detection и field extraction;
-- базовая нормализация;
-- output writer с переименованием PDF/JSON;
-- debug artifacts;
-- `config:doctor` с проверкой paths, prompt templates, components, LLM profile и hard rules;
-- `dry-run`;
-- alias lookup для doc types;
-- golden runner;
-- README, CONTEXT, docs/ARCHITECTURE, docs/PROMPTS, docs/GOLDEN_SET, BUG_REPORT;
-- локальный browser UI через 
-pm run ui`;
-- UI save guard: backup, JSON/JSONC parse, `config:doctor`, prompt preview и rollback;
-- вкладка Field Mappings в UI.
+- Node.js 22 ESM, `package.json`, CLI `src/cli.js`, orchestrator `src/orchestrator.js`, компоненты `src/components/`;
+- config-driven `config/config.jsonc` + `config/doc_types/*.json` (8 типов: 3 MVP + 5 УПТ) + `field_mappings.json`;
+- prompt база `config/prompts/templates/` + per-type `types/<type>.md` 8 шт, `prompt-builder.js:107` per-type fallback;
+- LLM `src/lib/llm.js` (`reasoning:none` 0 tokens, ретрай 3×, `num_ctx 32768`, `OLLAMA_BASE_URL` env-override `llm.js:104`);
+- `assemble-document-pdf.js` 200 DPI JPEG, `rasterize-first-page` legacy;
+- two-pass `universal` (тип) + `specific` (поля) + `one-pass` fallback, `normalize-fields.js:39` с `trim/date/uppercase` + `required` фикс;
+- `write-output.js:14` `sanitizeFileNamePart` для Windows слэшей;
+- `config:doctor`, `dry-run`, `prompt:render`, alias lookup, `golden/` 5 кейсов `test:golden`;
+- `Ollama.md`, `LINUX_OLLAMA.md`, `BUG_REPORT`, `CODE_REVIEW 2026-08-23`;
+- browser UI светлая тема `ui/style.css:1` `color-scheme: light`, табы `Config`/`Field Mappings`/`Pipeline`/`Doc Types`/`Prompts`/`Run`/`Files`/`Проверка` `ui/index.html:26`, `verify` `GET /api/verify/list` + `GET /api/raw/*` `ui-server.js:240` + `GET /api/files`, save guard + `types/` рекурсия.
 
 ---
 
@@ -501,9 +484,12 @@ ormalize-fields` исправлен.
 
 - Thinking Qwen: `reasoning: {effort:"none"}` `src/lib/llm.js:181` (проверено на `qwen/qwen3.6-35b-a3b` через RouterAI, 0 tokens vs 370) — `knowledge/routerai-api.md:44`.
 - Ollama `num_ctx 32768` в `config.jsonc:67` + `llm.js:198` `options.num_ctx` + `OLLAMA_BASE_URL`/`DOCUMIND_ACTIVE_PROFILE` env-override `llm.js:104` для офиса; MoE 35B A3B на 5070 16GB ок (`Ollama.md:49`).
-- УПТ-блок заказчика: 5 типов `upt_*` с 6 полями и `outputNaming` по ТЗ, слэши режет `sanitizeFileNamePart` `write-output.js:14`.
-- LLM resilience: ретрай 3× `429`/`5xx`/`Abort` + `response.json()` под таймаутом `llm.js:205`.
-- `collectFields` depth>20, golden flat fields — ранее.
+- УПТ-блок заказчика: 5 типов `upt_*` с 6+3 полями и `outputNaming` по ТЗ, `upt_act` унифицирован из 3 папок, слэши режет `sanitizeFileNamePart` `write-output.js:14`, `structure.txt` 10421/139 — тренировка.
+- База промптов `types/<type>.md` 8 шт `prompt-builder.js:107` per-type fallback + `ui-server.js:171` рекурсия, `one-pass` + `two-pass` `config.jsonc:74` `pipeline 5-6`.
+- LLM resilience: ретрай 3× `429`/`5xx`/`Abort` + `response.json()` под таймаутом `llm.js:205` (фикс `clearTimeout` leak `llm.js:244`), `baseUrl` валидация `new URL` `llm.js:104`.
+- Нормализация: `normalize-fields.js:39` вызывалась, `required` фикс `normalize-fields.js:124`, `collectFields` depth>20.
+- Светлая тема `ui/style.css:1` `color-scheme: light`, `Проверка` `verify` `GET /api/verify/list` + `GET /api/raw/*` `ui-server.js:240` N+1 фикс `Map`, `prompt-builder` `ENOENT` warn, `ui/app.js:320` dead branch, `body.options` spread.
+- `golden/upt_*/` 5 кейсов, `input/` 57 рандом `doc_*.pdf` + `.mapping.json` анти-подгляд.
 
 ### Still open
 
