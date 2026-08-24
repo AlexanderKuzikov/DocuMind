@@ -304,21 +304,29 @@ async function loadVerify() {
 }
 
 const TYPE_COLORS = {
-  upt_rights: '#dbeafe',   // blue
-  upt_costs: '#dcfce7',    // green
-  upt_act: '#fef9c3',      // yellow
-  upt_notify: '#fce7f3',   // pink
-  upt_add: '#e0e7ff',      // indigo
-  egrul_extract: '#ffedd5',
-  vehicle_registration_certificate: '#ccfbf1',
-  traffic_accident_participants: '#f3e8ff',
-  unknown: '#fee2e2',
-  not_processed: '#f1f5f9'
+  upt_rights: '#2563eb',   // яркий синий
+  upt_costs: '#16a34a',    // яркий зелёный
+  upt_act: '#d97706',      // янтарный
+  upt_notify: '#db2777',   // малиновый
+  upt_add: '#4f46e5',      // индиго
+  egrul_extract: '#ea580c',
+  vehicle_registration_certificate: '#0891b2',
+  traffic_accident_participants: '#9333ea',
+  unknown: '#dc2626',
+  not_processed: '#94a3b8'
 };
-function typeColor(type, status) {
-  if (status === 'not_processed') return TYPE_COLORS.not_processed;
-  return TYPE_COLORS[type] || TYPE_COLORS.unknown;
-}
+const TYPE_BG = {
+  upt_rights: '#eff6ff',
+  upt_costs: '#f0fdf4',
+  upt_act: '#fefce8',
+  upt_notify: '#fdf2f8',
+  upt_add: '#eef2ff',
+  egrul_extract: '#fff7ed',
+  vehicle_registration_certificate: '#ecfeff',
+  traffic_accident_participants: '#faf5ff',
+  unknown: '#fef2f2',
+  not_processed: '#f8fafc'
+};
 
 function renderVerifyList() {
   const list = $('#verify-list');
@@ -340,8 +348,9 @@ function renderVerifyList() {
     const badge = item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error';
     const type = item.docType || '—';
     const name = item.inputName || item.docId || 'unknown';
-    const bg = typeColor(item.docType, item.status);
-    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border-left:4px solid ${bg}; background:${isActive ? '' : bg}20">
+    const border = TYPE_COLORS[item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown')] || TYPE_COLORS.unknown;
+    const bg = TYPE_BG[item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown')] || TYPE_BG.unknown;
+    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border-left:5px solid ${border}; background:${isActive ? 'var(--accent-soft)' : bg}">
       <div class="verify-item-title">${escapeHtml(name)}</div>
       <div class="small">${escapeHtml(type)} <span class="badge ${badge}">${escapeHtml(item.status)}</span> ${item.confidence ? '· ' + item.confidence : ''}</div>
     </button>`;
