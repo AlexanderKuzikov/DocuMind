@@ -327,9 +327,23 @@ const TYPE_BG = {
   unknown: '#fef2f2',
   not_processed: '#f8fafc'
 };
+const TYPE_BG_ACTIVE = {
+  upt_rights: '#dbeafe',
+  upt_costs: '#dcfce7',
+  upt_act: '#fef9c3',
+  upt_notify: '#fce7f3',
+  upt_add: '#e0e7ff',
+  egrul_extract: '#ffedd5',
+  vehicle_registration_certificate: '#ccfbf1',
+  traffic_accident_participants: '#f3e8ff',
+  unknown: '#fee2e2',
+  not_processed: '#e2e8f0'
+};
 
 function renderVerifyList() {
+  try {
   const list = $('#verify-list');
+  if (!list) return;
   const prevScroll = list.scrollTop;
   const items = getFilteredVerifyItems();
   // update count to reflect filter
@@ -348,17 +362,21 @@ function renderVerifyList() {
     const badge = item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error';
     const type = item.docType || '—';
     const name = item.inputName || item.docId || 'unknown';
-    const border = TYPE_COLORS[item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown')] || TYPE_COLORS.unknown;
-    const bg = TYPE_BG[item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown')] || TYPE_BG.unknown;
-    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border-left:5px solid ${border}; background:${isActive ? 'var(--accent-soft)' : bg}">
+    const key = item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown');
+    const border = TYPE_COLORS[key] || TYPE_COLORS.unknown;
+    const bg = TYPE_BG[key] || TYPE_BG.unknown;
+    const bgActive = TYPE_BG_ACTIVE[key] || TYPE_BG_ACTIVE.unknown;
+    const conf = item.confidence != null ? String(item.confidence) : '';
+    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border:1px solid ${isActive ? border : '#e2e8f0'}; border-left:5px solid ${border}; background:${isActive ? bgActive : bg}">
       <div class="verify-item-title">${escapeHtml(name)}</div>
-      <div class="small"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0">${escapeHtml(type)}</span> <span class="badge ${badge}">${escapeHtml(item.status)}</span>${item.confidence ? `<span style="white-space:nowrap">· ${item.confidence}</span>` : ''}</div>
+      <div class="small"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0">${escapeHtml(type)}</span><span style="display:flex;align-items:center;gap:0.35rem;flex:0 0 auto"><span class="badge ${badge}" style="min-width:2.0rem;justify-content:center">${escapeHtml(item.status)}</span>${conf ? `<span style="min-width:2.3rem;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap">${escapeHtml(conf)}</span>` : '<span style="min-width:2.3rem"></span>'}</span></div>
     </button>`;
   }).join('');
   list.scrollTop = prevScroll;
   // keep active item visible
   const activeBtn = list.querySelector('button.active');
   if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+  } catch (e) { console.error('renderVerifyList', e); }
 }
 
 function selectVerify(idOrName) {
@@ -410,12 +428,12 @@ function initVerifyResizers() {
   const split = $('#verify-split');
   const gutterVert = $('#gutter-vert');
   const gutterHoriz = $('#gutter-horiz');
-  // restore from localStorage — use 1fr for remainder to survive hidden tab
+  // restore from localStorage — validate, use 1fr for remainder
   try {
-    const savedVert = localStorage.getItem('documind:verify:layoutW');
-    if (savedVert && layout) layout.style.gridTemplateColumns = `${savedVert}px 14px 1fr`;
-    const savedPdf = localStorage.getItem('documind:verify:pdfW');
-    if (savedPdf && split) split.style.gridTemplateColumns = `${savedPdf}px 14px 1fr`;
+    const savedVert = Number(localStorage.getItem('documind:verify:layoutW'));
+    if (savedVert && layout && savedVert >= 160 && savedVert <= 520) layout.style.gridTemplateColumns = `${savedVert}px 14px 1fr`;
+    const savedPdf = Number(localStorage.getItem('documind:verify:pdfW'));
+    if (savedPdf && split && savedPdf >= 280 && savedPdf <= 1200) split.style.gridTemplateColumns = `${savedPdf}px 14px 1fr`;
     const savedFont = localStorage.getItem('documind:verify:fontSize');
     if (savedFont) setVerifyFontSize(Number(savedFont), false);
   } catch {}
