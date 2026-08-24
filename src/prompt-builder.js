@@ -109,7 +109,9 @@ export async function buildSpecificPrompt(config, docType, previousResult) {
   let template;
   try {
     template = await readTemplate(config, `types/${docType.type}`);
-  } catch {
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    console.warn(`[prompt-builder] missing per-type ${docType.type}, fallback to specific.md`);
     template = await readTemplate(config, 'specific');
   }
   return render(template, {

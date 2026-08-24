@@ -322,20 +322,6 @@ function showVerifyPdf() {
   if (!item) return;
   const iframe = $('#verify-pdf');
   let src = '';
-  if (state.verifyPdfMode === 'input' && item.inputFile) {
-    const rel = item.inputFile.split(/input[\\/]/).pop() || item.inputName;
-    src = `/api/raw/input/${encodeURIComponent(rel)}`;
-  } else if (state.verifyPdfMode === 'output' && item.outputPdfPath) {
-    const rel = item.outputPdfPath.split(/output[\\/]/).pop() || '';
-    src = `/api/raw/output/${encodeURIComponent(rel)}`;
-  } else if (item.assembledPdf) {
-    const rel = item.assembledPdf.split(/staging[\\/]/).pop();
-    // staging has subdir docId/assembled/page-001.jpg etc, serve via raw staging
-    const parts = item.assembledPdf.split(pathSepForUrl(item.assembledPdf));
-    // fallback to input if no output
-    src = item.inputFile ? `/api/raw/input/${encodeURIComponent(item.inputName)}` : '';
-  }
-  // direct: use inputFile basename for input, output pdf name for output
   if (state.verifyPdfMode === 'input') {
     src = `/api/raw/input/${encodeURIComponent(item.inputName)}`;
   } else {
@@ -345,8 +331,6 @@ function showVerifyPdf() {
   iframe.src = src;
   document.querySelectorAll('[data-verify-pdf]').forEach((b) => b.classList.toggle('active', b.dataset.verifyPdf === state.verifyPdfMode));
 }
-
-function pathSepForUrl(p) { return p.includes('\\') ? '\\' : '/'; }
 
 function escapeHtml(value) {
   return String(value)

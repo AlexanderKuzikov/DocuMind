@@ -193,7 +193,19 @@ async function listVerifyDocuments(config) {
   const outputDir = resolveConfigPath(config, config.paths.output);
   const inputDir = resolveConfigPath(config, config.paths.input);
   const items = [];
-  // scan output jsons as primary
+  // build output map once to avoid N+1
+  const outputMap = new Map();
+  try {
+    const outFiles = await fs.readdir(outputDir, { withFileTypes: true });
+    for (const f of outFiles.filter((x) => x.isFile() && x.name.endsWith('.json'))) {
+      const p = path.join(outputDir, f.name);
+      try {
+        const j = JSON.parse(await readTextFile(p));
+        if (j.docId) outputMap.set(j.docId, { json: j, path: p });
+      } catch {}
+    }
+  } catch {}
+  // scan staging
   try {
     const outEntries = await fs.readdir(stagingDir, { withFileTypes: true });
     for (const entry of outEntries.filter((e) => e.isDirectory())) {
@@ -201,17 +213,15 @@ async function listVerifyDocuments(config) {
       let manifest = null;
       try { manifest = JSON.parse(await readTextFile(manifestPath)); } catch {}
       const docId = entry.name;
-      // find output json by docId
-      let outputJson = null;
-      let outputPath = null;
+      // find output json by docId from map
+      const hit = outputMap.get(docId);
+      let outputJson = hit?.json || null;
+      let outputPath = hit?.path || null;
       try {
-        const outFiles = await fs.readdir(outputDir, { withFileTypes: true });
-        for (const f of outFiles.filter((x) => x.isFile() && x.name.endsWith('.json'))) {
-          const p = path.join(outputDir, f.name);
-          try {
-            const j = JSON.parse(await readTextFile(p));
-            if (j.docId === docId) { outputJson = j; outputPath = p; break; }
-          } catch {}
+        if (!outputJson) {
+          const dbg = resolveConfigPath(config, './debug');
+          const dbgPath = path.join(dbg, docId, 'output.json');
+          outputJson = JSON.parse(await readTextFile(dbgPath));
         }
       } catch {}
       // fallback: read output.json from debug/config
@@ -450,6 +460,11 @@ async function handleApi(req, res, config) {
       const relative = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
       if (!relative) throw new Error('Missing file path');
       const file = safeJoin(base, relative);
+      try {
+        const realBase = await fs.realpath(base).catch(() => base);
+        const realFile = await fs.realpath(file).catch(() => file);
+        if (!realFile.startsWith(realBase + path.sep) && realFile !== realBase) throw new Error('Path traversal');
+      } catch (e) { if (e.message === 'Path traversal') throw e; }
       const data = await fs.readFile(file);
       const ext = path.extname(file).toLowerCase();
       let ct = 'application/octet-stream';
@@ -465,8 +480,7 @@ async function handleApi(req, res, config) {
   } catch (error) {
     return sendJson(res, 500, {
       ok: false,
-      error: error.message,
-      stack: error.stack
+      error: error.message
     });
   }
 }
@@ -501,8 +515,7 @@ async function main() {
     } catch (error) {
       return sendJson(res, 500, {
         ok: false,
-        error: error.message,
-        stack: error.stack
+        error: error.message
       });
     }
   });

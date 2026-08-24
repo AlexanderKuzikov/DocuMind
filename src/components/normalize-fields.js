@@ -119,6 +119,12 @@ export async function run(context) {
   const docType = firstPass.docType || rawExtracted.docType || rawExtracted.docTypeGuess || 'unknown';
   const docTypeConfig = context.docTypes.find((item) => item.type === docType) || null;
   const typedFields = applyTypeAliases(docTypeConfig, fields);
+  // normalize according to docType field definitions
+  for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {
+    if (typedFields[field.id] !== undefined && typedFields[field.id] !== null && typedFields[field.id] !== '') {
+      typedFields[field.id] = normalizeField(field, typedFields[field.id]);
+    }
+  }
 
   const errors = [];
   for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {

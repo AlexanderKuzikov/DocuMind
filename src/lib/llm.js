@@ -110,16 +110,14 @@ export class LlmClient {
       throw new Error(`Unknown LLM profile: ${profileName}`);
     }
     const profile = { ...base, name: profileName };
-    // Env override for Ollama IP: OLLAMA_BASE_URL=http://192.168.1.100:11434/v1
-    if (profile.baseUrlEnv) {
-      const envUrl = getEnvValue(profile.baseUrlEnv);
+    // Env override for baseUrl: profile.baseUrlEnv or generic OLLAMA_BASE_URL for prod-ollama
+    const envKey = profile.baseUrlEnv || (profileName === 'prod-ollama' ? 'OLLAMA_BASE_URL' : null);
+    if (envKey) {
+      const envUrl = getEnvValue(envKey);
       if (envUrl) profile.baseUrl = envUrl;
     }
-    // Fallback generic env for any profile
-    const genericEnvUrl = getEnvValue('OLLAMA_BASE_URL');
-    if (profileName === 'prod-ollama' && genericEnvUrl && !getEnvValue(profile.baseUrlEnv || '')) {
-      profile.baseUrl = genericEnvUrl;
-    }
+    if (!profile.baseUrl) throw new Error(`Missing baseUrl for LLM profile ${profileName}`);
+    try { new URL(profile.baseUrl); } catch { throw new Error(`Invalid baseUrl for LLM profile ${profileName}: ${profile.baseUrl}`); }
     return profile;
   }
 
@@ -199,7 +197,7 @@ export class LlmClient {
     // Ollama defaults to 2048 tokens, silently evicting earlier tokens when exceeded.
     // See Ollama.md for the full analysis.
     if (profile.numCtx) {
-      body.options = { num_ctx: profile.numCtx };
+      body.options = { ...(body.options || {}), num_ctx: profile.numCtx };
     }
 
     const timeoutMs = profile.timeout || this.config.llm.timeout || 180000;
@@ -241,15 +239,23 @@ export class LlmClient {
         throw new Error(`LLM request failed: ${response.status} ${response.statusText} ${text}`);
       }
 
+      let jsonTimeout;
       try {
         // timeout covers response.json() too
         const jsonPromise = response.json();
-        const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('LLM response.json timeout')), timeoutMs));
+        const timeoutPromise = new Promise((_, rej) => {
+          jsonTimeout = setTimeout(() => {
+            controller.abort();
+            rej(new Error('LLM response.json timeout'));
+          }, timeoutMs);
+        });
         json = await Promise.race([jsonPromise, timeoutPromise]);
         clearTimeout(timeout);
+        clearTimeout(jsonTimeout);
         break;
       } catch (err) {
         clearTimeout(timeout);
+        clearTimeout(jsonTimeout);
         lastErr = err;
         if (attempt < 2) continue;
         throw err;
