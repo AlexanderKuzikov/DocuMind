@@ -41,7 +41,7 @@ function normalizePersonName(value) {
   let s = String(value).trim();
   // Strip leading status prefixes that VLM sometimes captures: "Гражданин РФ", "Гражданка РФ", "РФ"
   // e.g. "Гражданин РФ Рябов А.В." -> "Рябов А.В.", "РФ Рябов Александр Владимирович" -> "Рябов Александр Владимирович"
-  s = s.replace(/^(?:гражданин(?:ка)?\s+рф|гражданин(?:ка)?|рф)\s+/iu, '').trim();
+  s = s.replace(/^(?:граждан(?:ин|ка)\s+рф|граждан(?:ин|ка)|рф)\s+/iu, '').trim();
   // Re-apply once in case of double prefix like "Гражданин РФ ...": after first replace, "РФ ..." may remain (already handled by alternation, but safe)
   s = s.replace(/^(?:рф)\s+/iu, '').trim();
   return s;
