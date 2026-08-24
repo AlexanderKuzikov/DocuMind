@@ -48,7 +48,7 @@
     {
       "id": "debtor",
       "label": "Должник",
-      "type": "string",
+      "type": "person_name",
       "required": true,
       "normalization": [
         "trim",
@@ -63,7 +63,7 @@
     {
       "id": "cedent",
       "label": "Цедент",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -78,7 +78,7 @@
     {
       "id": "cessionary",
       "label": "Цессионарий",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -184,7 +184,7 @@
     {
       "id": "debtor",
       "label": "Должник",
-      "type": "string",
+      "type": "person_name",
       "required": true,
       "normalization": [
         "trim",
@@ -199,7 +199,7 @@
     {
       "id": "cedent",
       "label": "Цедент",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -214,7 +214,7 @@
     {
       "id": "cessionary",
       "label": "Цессионарий",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -286,7 +286,7 @@
     {
       "id": "debtor",
       "label": "Должник",
-      "type": "string",
+      "type": "person_name",
       "required": true,
       "normalization": [
         "trim",
@@ -301,7 +301,7 @@
     {
       "id": "cedent",
       "label": "Цедент",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -316,7 +316,7 @@
     {
       "id": "cessionary",
       "label": "Цессионарий",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",

@@ -10,7 +10,11 @@ function render(template, values) {
 function formatField(field) {
   const required = field.required ? 'required' : 'optional';
   const validation = field.validation ? `, validation=${field.validation}` : '';
-  const hint = field.extractionHint ? ` — ${field.extractionHint}` : '';
+  // auto-hint for person_name — reusable for any new doc types
+  let hint = field.extractionHint ? ` — ${field.extractionHint}` : '';
+  if (field.type === 'person_name' && !hint.includes('именительном')) {
+    hint += ' — ФИО в именительном падеже, без префиксов Гражданин РФ/РФ/ИП';
+  }
   return `- ${field.id} — ${field.label}, ${field.type}, ${required}${validation}${hint}`;
 }
 

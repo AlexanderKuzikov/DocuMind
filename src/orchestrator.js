@@ -301,6 +301,17 @@ export async function configDoctor(options = {}) {
     if (!docType.name) errors.push(`${docType.type}: missing name`);
     if (!Array.isArray(docType.aliases)) errors.push(`${docType.type}: missing aliases array`);
     if (!Array.isArray(docType.recognitionFeatures)) errors.push(`${docType.type}: missing recognitionFeatures array`);
+    // reusable person field check — auto catches new doc types
+    const personHintRe = /именительн/i;
+    for (const f of [...(docType.fields || []), ...(docType.firstPassFields || [])]) {
+      if (f.type === 'person_name') {
+        if (!((f.normalization || []).includes('person'))) errors.push(`${docType.type}.${f.id}: person_name must have normalization "person"`);
+        if (!personHintRe.test(f.extractionHint || '')) errors.push(`${docType.type}.${f.id}: person_name hint must mention "именительном падеже"`);
+      }
+      if (['debtor', 'cedent', 'cessionary', 'recipient'].includes(f.id) && f.type !== 'person_name') {
+        errors.push(`${docType.type}.${f.id}: person field must use type "person_name" (not "${f.type}")`);
+      }
+    }
     const fields = docType.fields || docType.firstPassFields || [];
     if (!Array.isArray(fields)) {
       errors.push(`${docType.type}: missing fields array`);

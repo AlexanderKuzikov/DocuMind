@@ -1,6 +1,17 @@
 {
-  "schemaVersion": "0.1.0",
-  "description": "Понятный маппинг технических ключей полей для UI/config. Меняется без правки кода.",
+  "schemaVersion": "0.2.0",
+  "description": "Понятный маппинг + переиспользуемые типы полей. person_name — ФИО в именительном без префиксов Гражданин РФ.",
+  "fieldTypes": {
+    "person_name": {
+      "type": "person_name",
+      "normalization": ["trim", "person"],
+      "hint": "ФИО в именительном падеже, без префиксов Гражданин РФ/Гражданка РФ/РФ/ИП, напр. Лузина Екатерина Александровна.",
+      "description": "ФИО физлица — нормализуется к именительному, режется префикс Гражданин РФ. Используй для debtor/cedent/cessionary/recipient.",
+      "promptFragment": "config/prompts/partials/person.md"
+    },
+    "date": { "normalization": ["date"], "description": "Дата → YYYY-MM-DD" },
+    "string": { "normalization": ["trim"] }
+  },
   "mappings": {
     "egrul_extract": {
       "ogrn": {

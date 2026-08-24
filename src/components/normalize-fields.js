@@ -133,12 +133,13 @@ export async function run(context) {
   const docType = firstPass.docType || rawExtracted.docType || rawExtracted.docTypeGuess || 'unknown';
   const docTypeConfig = context.docTypes.find((item) => item.type === docType) || null;
   const typedFields = applyTypeAliases(docTypeConfig, fields);
-  // normalize according to docType field definitions
+  // normalize according to docType field definitions — auto handles person_name type
   for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {
     if (typedFields[field.id] !== undefined && typedFields[field.id] !== null && typedFields[field.id] !== '') {
       typedFields[field.id] = normalizeField(field, typedFields[field.id]);
-      // Person-field prefix cleanup: fallback even if "person" rule not listed (legacy configs / golden)
-      if (PERSON_FIELDS.has(field.id) && typeof typedFields[field.id] === 'string') {
+      // Person-field prefix cleanup: handles both legacy id-based and new type-based (future types)
+      const isPerson = field.type === 'person_name' || PERSON_FIELDS.has(field.id);
+      if (isPerson && typeof typedFields[field.id] === 'string') {
         typedFields[field.id] = normalizePersonName(typedFields[field.id]);
       }
     }

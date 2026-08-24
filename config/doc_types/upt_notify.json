@@ -62,7 +62,7 @@
     {
       "id": "recipient",
       "label": "Адресат (должник/страховая)",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -137,7 +137,7 @@
     {
       "id": "recipient",
       "label": "Адресат (должник/страховая)",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
@@ -181,7 +181,7 @@
     {
       "id": "recipient",
       "label": "Адресат",
-      "type": "string",
+      "type": "person_name",
       "required": false,
       "normalization": [
         "trim",
