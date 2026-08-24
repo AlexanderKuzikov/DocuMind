@@ -18,45 +18,76 @@
       "label": "Номер договора УПТ/УПТЮ (основного)",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
+      "normalization": [
+        "trim"
+      ],
       "extractionHint": "Номер основного договора УПТ или УПТЮ из текста: 'в соответствии с договором уступки права требования 000000183' или из приложения 'договор № 28/12/2023/УПТ-8 от 28.12.2023 (копия)' или '№ 28/12/2023/УПТЮ-8'.",
-      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+      "aliases": [
+        "contractNumber",
+        "upt_number",
+        "номер договора",
+        "№"
+      ]
     },
     {
       "id": "contract_date",
       "label": "Дата договора УПТ/УПТЮ (основного)",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
+      "normalization": [
+        "date"
+      ],
       "extractionHint": "Дата основного договора УПТ/УПТЮ рядом с номером, например 28.12.2023.",
-      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+      "aliases": [
+        "document_date",
+        "date",
+        "contract_date",
+        "дата договора"
+      ]
     },
     {
       "id": "notification_date",
       "label": "Дата уведомления",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
+      "normalization": [
+        "date"
+      ],
       "extractionHint": "Дата самого уведомления (если указана в шапке/подписи).",
-      "aliases": ["notificationDate", "дата уведомления"]
+      "aliases": [
+        "notificationDate",
+        "дата уведомления"
+      ]
     },
     {
       "id": "recipient",
       "label": "Адресат (должник/страховая)",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "extractionHint": "Кому адресовано уведомление: ФИО должника или страховая.",
-      "aliases": ["addressee", "адресат", "получатель"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "extractionHint": "Кому адресовано уведомление: ФИО в именительном падеже без префиксов Гражданин РФ/РФ, или страховая.",
+      "aliases": [
+        "addressee",
+        "адресат",
+        "получатель"
+      ]
     },
     {
       "id": "recipient_address",
       "label": "Адрес получателя",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
+      "normalization": [
+        "trim"
+      ],
       "extractionHint": "Адрес должника/страховой из уведомления.",
-      "aliases": ["recipientAddress", "адрес получателя"]
+      "aliases": [
+        "recipientAddress",
+        "адрес получателя"
+      ]
     }
   ],
   "firstPassFields": [
@@ -65,40 +96,72 @@
       "label": "Номер договора УПТ/УПТЮ (основного)",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "contractNumber",
+        "upt_number",
+        "номер договора",
+        "№"
+      ]
     },
     {
       "id": "contract_date",
       "label": "Дата договора УПТ/УПТЮ (основного)",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
-      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "document_date",
+        "date",
+        "contract_date",
+        "дата договора"
+      ]
     },
     {
       "id": "notification_date",
       "label": "Дата уведомления",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
-      "aliases": ["notificationDate", "дата уведомления"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "notificationDate",
+        "дата уведомления"
+      ]
     },
     {
       "id": "recipient",
       "label": "Адресат (должник/страховая)",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["addressee", "адресат", "получатель"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "addressee",
+        "адресат",
+        "получатель"
+      ],
+      "extractionHint": "Кому адресовано уведомление: ФИО в именительном падеже без префиксов Гражданин РФ/РФ, или страховая."
     },
     {
       "id": "recipient_address",
       "label": "Адрес получателя",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["recipientAddress", "адрес получателя"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "recipientAddress",
+        "адрес получателя"
+      ]
     }
   ],
   "secondPassFields": [
@@ -107,24 +170,41 @@
       "label": "Дата уведомления",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
-      "aliases": ["notificationDate", "дата уведомления"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "notificationDate",
+        "дата уведомления"
+      ]
     },
     {
       "id": "recipient",
       "label": "Адресат",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["addressee", "адресат"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "addressee",
+        "адресат"
+      ],
+      "extractionHint": "Кому адресовано уведомление: ФИО в именительном падеже без префиксов Гражданин РФ/РФ, или страховая."
     },
     {
       "id": "recipient_address",
       "label": "Адрес получателя",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["recipientAddress", "адрес получателя"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "recipientAddress",
+        "адрес получателя"
+      ]
     }
   ],
   "validationRules": [

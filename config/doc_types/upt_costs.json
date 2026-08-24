@@ -18,81 +18,136 @@
       "label": "Номер договора УПТЮ",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
+      "normalization": [
+        "trim"
+      ],
       "extractionHint": "Номер договора УПТЮ на судебные расходы, например 28/12/2023/УПТЮ-8.",
-      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+      "aliases": [
+        "contractNumber",
+        "upt_number",
+        "номер договора",
+        "№"
+      ]
     },
     {
       "id": "contract_date",
       "label": "Дата договора",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
+      "normalization": [
+        "date"
+      ],
       "extractionHint": "Дата договора УПТЮ, например 28.12.2023.",
-      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+      "aliases": [
+        "document_date",
+        "date",
+        "contract_date",
+        "дата договора"
+      ]
     },
     {
       "id": "debtor",
       "label": "Должник",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "extractionHint": "Должник по судебным расходам.",
-      "aliases": ["debtor_name", "должник"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "extractionHint": "Должник — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Лузина Екатерина Александровна (не Лузиной...). Обязательно.",
+      "aliases": [
+        "debtor_name",
+        "должник"
+      ]
     },
     {
       "id": "cedent",
       "label": "Цедент",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "extractionHint": "Цедент — уступающий право на судебные расходы.",
-      "aliases": ["cedent_name", "цедент"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "extractionHint": "Цедент — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Терентьева Ксения Андреевна. Желательно.",
+      "aliases": [
+        "cedent_name",
+        "цедент"
+      ]
     },
     {
       "id": "cessionary",
       "label": "Цессионарий",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "extractionHint": "Цессионарий — принимающий право на судебные расходы.",
-      "aliases": ["cessionary_name", "цессионарий"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "extractionHint": "Цессионарий — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Баранов Андрей Владимирович. Желательно.",
+      "aliases": [
+        "cessionary_name",
+        "цессионарий"
+      ]
     },
     {
       "id": "amount",
       "label": "Сумма уступаемого требования (Цена цессии)",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
+      "normalization": [
+        "trim"
+      ],
       "extractionHint": "Сумма/цена цессии по судебным расходам.",
-      "aliases": ["cession_price", "price", "сумма", "цена цессии"]
+      "aliases": [
+        "cession_price",
+        "price",
+        "сумма",
+        "цена цессии"
+      ]
     },
     {
       "id": "vehicle_number",
       "label": "Госномер ТС",
       "type": "string",
       "required": false,
-      "normalization": ["trim", "uppercase"],
+      "normalization": [
+        "trim",
+        "uppercase"
+      ],
       "extractionHint": "Госномер автомобиля из договора (если указан).",
-      "aliases": ["vehicleNumber", "госномер"]
+      "aliases": [
+        "vehicleNumber",
+        "госномер"
+      ]
     },
     {
       "id": "accident_date",
       "label": "Дата ДТП",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
+      "normalization": [
+        "date"
+      ],
       "extractionHint": "Дата ДТП, послужившего основанием требования.",
-      "aliases": ["dtp_date", "дата дтп"]
+      "aliases": [
+        "dtp_date",
+        "дата дтп"
+      ]
     },
     {
       "id": "accident_location",
       "label": "Место ДТП",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
+      "normalization": [
+        "trim"
+      ],
       "extractionHint": "Место ДТП как в договоре.",
-      "aliases": ["accident_place", "место дтп"]
+      "aliases": [
+        "accident_place",
+        "место дтп"
+      ]
     }
   ],
   "firstPassFields": [
@@ -101,72 +156,130 @@
       "label": "Номер договора УПТЮ",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "aliases": ["contractNumber", "upt_number", "номер договора", "№"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "contractNumber",
+        "upt_number",
+        "номер договора",
+        "№"
+      ]
     },
     {
       "id": "contract_date",
       "label": "Дата договора",
       "type": "date",
       "required": true,
-      "normalization": ["date"],
-      "aliases": ["document_date", "date", "contract_date", "дата договора"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "document_date",
+        "date",
+        "contract_date",
+        "дата договора"
+      ]
     },
     {
       "id": "debtor",
       "label": "Должник",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "aliases": ["debtor_name", "должник"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "debtor_name",
+        "должник"
+      ],
+      "extractionHint": "Должник — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Лузина Екатерина Александровна (не Лузиной...). Обязательно."
     },
     {
       "id": "cedent",
       "label": "Цедент",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cedent_name", "цедент"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "cedent_name",
+        "цедент"
+      ],
+      "extractionHint": "Цедент — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Терентьева Ксения Андреевна. Желательно."
     },
     {
       "id": "cessionary",
       "label": "Цессионарий",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cessionary_name", "цессионарий"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "cessionary_name",
+        "цессионарий"
+      ],
+      "extractionHint": "Цессионарий — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Баранов Андрей Владимирович. Желательно."
     },
     {
       "id": "amount",
       "label": "Сумма уступаемого требования (Цена цессии)",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cession_price", "price", "сумма", "цена цессии"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "cession_price",
+        "price",
+        "сумма",
+        "цена цессии"
+      ]
     },
     {
       "id": "vehicle_number",
       "label": "Госномер ТС",
       "type": "string",
       "required": false,
-      "normalization": ["trim", "uppercase"],
-      "aliases": ["vehicleNumber", "госномер"]
+      "normalization": [
+        "trim",
+        "uppercase"
+      ],
+      "aliases": [
+        "vehicleNumber",
+        "госномер"
+      ]
     },
     {
       "id": "accident_date",
       "label": "Дата ДТП",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
-      "aliases": ["dtp_date", "дата дтп"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "dtp_date",
+        "дата дтп"
+      ]
     },
     {
       "id": "accident_location",
       "label": "Место ДТП",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["accident_place", "место дтп"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "accident_place",
+        "место дтп"
+      ]
     }
   ],
   "secondPassFields": [
@@ -175,56 +288,99 @@
       "label": "Должник",
       "type": "string",
       "required": true,
-      "normalization": ["trim"],
-      "aliases": ["debtor_name", "должник"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "debtor_name",
+        "должник"
+      ],
+      "extractionHint": "Должник — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Лузина Екатерина Александровна (не Лузиной...). Обязательно."
     },
     {
       "id": "cedent",
       "label": "Цедент",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cedent_name", "цедент"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "cedent_name",
+        "цедент"
+      ],
+      "extractionHint": "Цедент — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Терентьева Ксения Андреевна. Желательно."
     },
     {
       "id": "cessionary",
       "label": "Цессионарий",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cessionary_name", "цессионарий"]
+      "normalization": [
+        "trim",
+        "person"
+      ],
+      "aliases": [
+        "cessionary_name",
+        "цессионарий"
+      ],
+      "extractionHint": "Цессионарий — в именительном падеже, без префиксов Гражданин РФ/РФ/ИП, напр. Баранов Андрей Владимирович. Желательно."
     },
     {
       "id": "amount",
       "label": "Сумма уступаемого требования",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["cession_price", "price", "сумма"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "cession_price",
+        "price",
+        "сумма"
+      ]
     },
     {
       "id": "vehicle_number",
       "label": "Госномер ТС",
       "type": "string",
       "required": false,
-      "normalization": ["trim", "uppercase"],
-      "aliases": ["vehicleNumber", "госномер"]
+      "normalization": [
+        "trim",
+        "uppercase"
+      ],
+      "aliases": [
+        "vehicleNumber",
+        "госномер"
+      ]
     },
     {
       "id": "accident_date",
       "label": "Дата ДТП",
       "type": "date",
       "required": false,
-      "normalization": ["date"],
-      "aliases": ["dtp_date", "дата дтп"]
+      "normalization": [
+        "date"
+      ],
+      "aliases": [
+        "dtp_date",
+        "дата дтп"
+      ]
     },
     {
       "id": "accident_location",
       "label": "Место ДТП",
       "type": "string",
       "required": false,
-      "normalization": ["trim"],
-      "aliases": ["accident_place", "место дтп"]
+      "normalization": [
+        "trim"
+      ],
+      "aliases": [
+        "accident_place",
+        "место дтп"
+      ]
     }
   ],
   "validationRules": [

@@ -36,6 +36,19 @@ function normalizePhone(value) {
   return value;
 }
 
+function normalizePersonName(value) {
+  if (!value) return value;
+  let s = String(value).trim();
+  // Strip leading status prefixes that VLM sometimes captures: "Гражданин РФ", "Гражданка РФ", "РФ"
+  // e.g. "Гражданин РФ Рябов А.В." -> "Рябов А.В.", "РФ Рябов Александр Владимирович" -> "Рябов Александр Владимирович"
+  s = s.replace(/^(?:гражданин(?:ка)?\s+рф|гражданин(?:ка)?|рф)\s+/iu, '').trim();
+  // Re-apply once in case of double prefix like "Гражданин РФ ...": after first replace, "РФ ..." may remain (already handled by alternation, but safe)
+  s = s.replace(/^(?:рф)\s+/iu, '').trim();
+  return s;
+}
+
+const PERSON_FIELDS = new Set(['debtor', 'cedent', 'cessionary', 'recipient']);
+
 function normalizeField(field, value) {
   if (value === undefined) return null;
   let result = value;
@@ -43,6 +56,7 @@ function normalizeField(field, value) {
     if (rule === 'uppercase') result = String(result).toLocaleUpperCase('ru-RU');
     if (rule === 'lowercase') result = String(result).toLocaleLowerCase('ru-RU');
     if (rule === 'trim') result = String(result).trim();
+    if (rule === 'person') result = normalizePersonName(result);
     if (rule === 'digits-only') result = normalizeDigits(result);
     if (rule === 'phone') result = normalizePhone(result);
     if (rule === 'date') result = normalizeDate(result);
@@ -123,6 +137,10 @@ export async function run(context) {
   for (const field of docTypeConfig?.fields || docTypeConfig?.firstPassFields || []) {
     if (typedFields[field.id] !== undefined && typedFields[field.id] !== null && typedFields[field.id] !== '') {
       typedFields[field.id] = normalizeField(field, typedFields[field.id]);
+      // Person-field prefix cleanup: fallback even if "person" rule not listed (legacy configs / golden)
+      if (PERSON_FIELDS.has(field.id) && typeof typedFields[field.id] === 'string') {
+        typedFields[field.id] = normalizePersonName(typedFields[field.id]);
+      }
     }
   }
 
