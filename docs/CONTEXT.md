@@ -491,6 +491,11 @@ ormalize-fields` исправлен.
 - Светлая тема `ui/style.css:1` `color-scheme: light`, `Проверка` `verify` `GET /api/verify/list` + `GET /api/raw/*` `ui-server.js:240` N+1 фикс `Map`, `prompt-builder` `ENOENT` warn, `ui/app.js:320` dead branch, `body.options` spread.
 - `golden/upt_*/` 5 кейсов, `input/` 57 рандом `doc_*.pdf` + `.mapping.json` анти-подгляд.
 
+### Fixed 2026-08-24
+
+- Person-поля `debtor/cedent/cessionary/recipient`: промпты `one-pass.md:35` + `types/upt_rights.md:14`/`upt_costs.md:14`/`upt_notify.md:14` + `config/doc_types/upt_*.json:57` требуют именительный без префиксов `Гражданин РФ/Гражданка РФ/РФ` (`Лузиной... -> Лузина...`, `Гражданин РФ Рябов... -> Рябов...`), код `src/components/normalize-fields.js:10` `normalizePersonName()` + `PERSON_FIELDS` + правило `person` — ретрай-прогон 2026-08-24 `doc_025+027` подтвердил `Лузина Екатерина Александровна` / `Рябов Александр Владимирович` `confidence 1`.
+- Прогон 24.08 12 файлов: 3 акта + 4 УПТЮ + 3 УПТ + 1 уведомление + 1 unknown (доп 2022 честно), все `ok` `200 DPI` `qwen3.6:35b-a3b` RouterAI.
+
 ### Still open
 
 - Нет полноценного golden set на реальных документах (нужны fixtures для УПТ).
@@ -524,6 +529,8 @@ Debug/input/output/staging/golden-репорты могут содержать �
 
 ## Журнал работ (последние 20)
 
+- 2026-08-24: Person-фикс УПТ — `Гражданин РФ` в `cessionary` (`РФ Рябов...` → `Рябов...` `doc_027`) и дательный должника (`Лузиной...` → `Лузина...` `doc_025`) — промпты `one-pass.md:35` + `types/upt_*.md:14` + `upt_*.json:57` `person` + код `normalize-fields.js:10` `normalizePersonName()` + `PERSON_FIELDS`; ретрай-прогон 2 файлов 2026-08-24 `ok` `confidence 1`, `12` файлов всего в `output/`.
+- 2026-08-24: Живые прогоны 24.08 — 3 акта (27с) + 6 diverse (98с: 4 УПТЮ + уведомление + unknown) + 3 УПТ 05-08-2024 (68с) — все `ok` `qwen3.6:35b-a3b` RouterAI, `output/` 12 JSON переведено в `docs/CONTEXT.md`.
 - 2026-08-23: УПТ-блок заказчика (02 Цессия) — 5 типов `upt_*` (ТЗ 6 полей + 3 доп `vehicle_number`/`accident_*`), унифицирован `upt_act` из 3 папок, `assembled` PDF, `sanitize` слэшей для Windows `write-output.js:14`. Вход `input/` 29 рандом `doc_*.pdf` + `.mapping.json` (анти-подгляд), `structure.txt` 10421/139 — тренировка, не истина.
 - 2026-08-23: База промптов по типам `config/prompts/templates/types/<type>.md` 8 шт, `prompt-builder.js:107` per-type fallback, `ui-server.js:171` рекурсивный `types/`. Двухпроход оставлен `config.jsonc:72` one-pass для 8 типов, готов к 139 через `universal`+`specific`.
 - 2026-08-23: LLM resilience — `reasoning: {effort:"none"}` `src/lib/llm.js:181` (RouterAI `qwen/qwen3.6-35b-a3b` 0 tokens vs 370, проверено), ретрай 3× `429`/`5xx`/`Abort` + `response.json()` под таймаутом `llm.js:205`, `OLLAMA_BASE_URL`/`DOCUMIND_ACTIVE_PROFILE` env-override `llm.js:104` для офиса 5070 16GB MoE `Ollama.md:49`.
