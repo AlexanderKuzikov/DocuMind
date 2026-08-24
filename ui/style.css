@@ -354,9 +354,10 @@ aside {
 .gutter-vert { cursor: col-resize; border-left: 1px solid var(--border); margin: 0 0.25rem; }
 .gutter-vert::after { content:""; position:absolute; left:-4px; right:-4px; top:0; bottom:0; }
 .gutter-vert:hover, .gutter-vert.dragging { border-color: var(--accent-strong); background: var(--accent-soft); }
-.gutter-horiz { cursor: col-resize; border-left: 1px solid var(--border); margin: 0 0.25rem; }
+.gutter-horiz { cursor: col-resize; border-left: 1px solid var(--border); margin: 0 0.25rem; width: 10px; }
 .gutter-horiz::after { content:""; position:absolute; left:-6px; right:-6px; top:0; bottom:0; }
 .gutter-horiz:hover, .gutter-horiz.dragging { border-color: var(--accent-strong); background: var(--accent-soft); }
+.gutter-vert { width: 10px; }
 .verify-list {
   display: grid;
   gap: 0.5rem;
@@ -392,7 +393,7 @@ aside {
 }
 .verify-split {
   display: grid;
-  grid-template-columns: 1.55fr 6px 1fr;
+  grid-template-columns: 1.9fr 10px 1fr;
   gap: 0;
   align-items: start;
 }
