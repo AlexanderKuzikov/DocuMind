@@ -350,16 +350,16 @@ aside {
 }
 .verify-layout #verify-list { padding-right: 0.5rem; }
 .verify-layout #verify-main { padding-left: 0.5rem; }
-.gutter { background: #cbd5e1; position: relative; display:flex; align-items:center; justify-content:center; border-radius: 6px; border: 1px solid #94a3b8; }
-.gutter::before { content:"⋮⋮"; color: #475569; font-size: 12px; font-weight: 700; line-height:1; letter-spacing:1px; }
-.gutter:hover, .gutter.dragging { background: #93c5fd; border-color: #2563eb; color: #1e40af; }
-.gutter-vert { cursor: col-resize; width: 14px; margin: 0 0.15rem; }
-.gutter-vert::after { content:""; position:absolute; left:-8px; right:-8px; top:0; bottom:0; }
-.gutter-horiz { cursor: col-resize; width: 14px; margin: 0 0.15rem; }
-.gutter-horiz::after { content:""; position:absolute; left:-8px; right:-8px; top:0; bottom:0; }
+.gutter { background: #e2e8f0; position: relative; display:flex; align-items:center; justify-content:center; border-radius: 6px; border: 1px solid #94a3b8; min-height: 60px; }
+.gutter::before { content:"⋮⋮"; color: #475569; font-size: 14px; font-weight: 700; line-height:1; letter-spacing:1px; }
+.gutter:hover, .gutter.dragging { background: #bfdbfe; border-color: #2563eb; color: #1e40af; }
+.gutter-vert { cursor: col-resize; width: 14px; margin: 0 0.15rem; align-self: stretch; }
+.gutter-vert::after { content:""; position:absolute; left:-10px; right:-10px; top:0; bottom:0; }
+.gutter-horiz { cursor: col-resize; width: 14px; margin: 0 0.15rem; align-self: stretch; }
+.gutter-horiz::after { content:""; position:absolute; left:-10px; right:-10px; top:0; bottom:0; }
 .verify-list {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.25rem;
   align-content: start;
   max-height: calc(100vh - 220px);
   overflow: auto;
@@ -369,9 +369,9 @@ aside {
   width: 100%;
   text-align: left;
   border-radius: var(--radius-md);
-  padding: 0.38rem 0.55rem;
+  padding: 0.3rem 0.5rem;
   border-left: 5px solid transparent;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 .verify-list button.active {
   border-color: var(--accent-strong);
@@ -387,16 +387,25 @@ aside {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.verify-list .small { font-size: 0.75rem; }
+.verify-list .small {
+  font-size: 0.70rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+.verify-list .small .badge { flex: 0 0 auto; white-space: nowrap; }
 .verify-main {
   display: grid;
   gap: 0.75rem;
 }
 .verify-split {
   display: grid;
-  grid-template-columns: 1.9fr 10px 1fr;
+  grid-template-columns: 1.9fr 14px 1fr;
   gap: 0;
-  align-items: start;
+  align-items: stretch;
 }
 .verify-split #verify-pdf-pane { padding-right: 0.5rem; }
 .verify-split #verify-json-pane { padding-left: 0.5rem; }
@@ -408,6 +417,15 @@ aside {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+#verify-doc-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .verify-pdf-bar button.active {
   border-color: var(--accent-strong);

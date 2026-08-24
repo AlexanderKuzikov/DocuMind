@@ -352,7 +352,7 @@ function renderVerifyList() {
     const bg = TYPE_BG[item.status === 'not_processed' ? 'not_processed' : (item.docType || 'unknown')] || TYPE_BG.unknown;
     return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border-left:5px solid ${border}; background:${isActive ? 'var(--accent-soft)' : bg}">
       <div class="verify-item-title">${escapeHtml(name)}</div>
-      <div class="small">${escapeHtml(type)} <span class="badge ${badge}">${escapeHtml(item.status)}</span> ${item.confidence ? '· ' + item.confidence : ''}</div>
+      <div class="small"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0">${escapeHtml(type)}</span> <span class="badge ${badge}">${escapeHtml(item.status)}</span>${item.confidence ? `<span style="white-space:nowrap">· ${item.confidence}</span>` : ''}</div>
     </button>`;
   }).join('');
   list.scrollTop = prevScroll;
@@ -405,31 +405,28 @@ function initVerifyResizers() {
   const split = $('#verify-split');
   const gutterVert = $('#gutter-vert');
   const gutterHoriz = $('#gutter-horiz');
-  // restore from localStorage
+  // restore from localStorage — use 1fr for remainder to survive hidden tab
   try {
     const savedVert = localStorage.getItem('documind:verify:layoutW');
-    if (savedVert && layout) layout.style.gridTemplateColumns = `${savedVert}px 10px 1fr`;
+    if (savedVert && layout) layout.style.gridTemplateColumns = `${savedVert}px 14px 1fr`;
     const savedPdf = localStorage.getItem('documind:verify:pdfW');
-    if (savedPdf && split) {
-      const containerW = split.getBoundingClientRect().width || 800;
-      const pdfW = Math.min(Math.max(300, Number(savedPdf)), containerW - 300);
-      const remain = containerW - pdfW - 10;
-      split.style.gridTemplateColumns = `${pdfW}px 10px ${remain}px`;
-    }
+    if (savedPdf && split) split.style.gridTemplateColumns = `${savedPdf}px 14px 1fr`;
+    const savedFont = localStorage.getItem('documind:verify:fontSize');
+    if (savedFont) setVerifyFontSize(Number(savedFont), false);
   } catch {}
   if (!layout || !gutterVert) return;
   // left list resizer
   let startX, startLeftW;
   function onVertMove(e) {
     const dx = e.clientX - startX;
-    const newW = Math.min(Math.max(180, startLeftW + dx), 520);
-    layout.style.gridTemplateColumns = `${newW}px 10px 1fr`;
+    const newW = Math.min(Math.max(160, startLeftW + dx), 520);
+    layout.style.gridTemplateColumns = `${newW}px 14px 1fr`;
   }
   function stopVert() {
     gutterVert.classList.remove('dragging');
     document.removeEventListener('mousemove', onVertMove);
     document.removeEventListener('mouseup', stopVert);
-    try { localStorage.setItem('documind:verify:layoutW', String($('#verify-list').getBoundingClientRect().width)); } catch {}
+    try { localStorage.setItem('documind:verify:layoutW', String(Math.round($('#verify-list').getBoundingClientRect().width))); } catch {}
   }
   gutterVert.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -446,15 +443,15 @@ function initVerifyResizers() {
   function onHorizMove(e) {
     const dx = e.clientX - startX2;
     const containerW = split.getBoundingClientRect().width;
-    const newPdfW = Math.min(Math.max(300, startPdfW + dx), containerW - 300);
-    const remain = containerW - newPdfW - 10;
-    split.style.gridTemplateColumns = `${newPdfW}px 10px ${remain}px`;
+    if (!containerW) return;
+    const newPdfW = Math.min(Math.max(280, startPdfW + dx), containerW - 280);
+    split.style.gridTemplateColumns = `${newPdfW}px 14px 1fr`;
   }
   function stopHoriz() {
     gutterHoriz.classList.remove('dragging');
     document.removeEventListener('mousemove', onHorizMove);
     document.removeEventListener('mouseup', stopHoriz);
-    try { localStorage.setItem('documind:verify:pdfW', String($('#verify-pdf-pane').getBoundingClientRect().width)); } catch {}
+    try { localStorage.setItem('documind:verify:pdfW', String(Math.round($('#verify-pdf-pane').getBoundingClientRect().width))); } catch {}
   }
   gutterHoriz.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -464,14 +461,16 @@ function initVerifyResizers() {
     document.addEventListener('mousemove', onHorizMove);
     document.addEventListener('mouseup', stopHoriz);
   });
-  // table column resizer persistence
-  try {
-    const savedTable = JSON.parse(localStorage.getItem('documind:verify:tableW') || 'null');
-    if (savedTable && $('#verify-fields table')) {
-      const ths = document.querySelectorAll('.verify-table th');
-      ths.forEach((th, i) => { if (savedTable[i]) th.style.width = savedTable[i] + 'px'; });
-    }
-  } catch {}
+}
+
+let verifyFontSize = 13; // px base for verify pane
+function setVerifyFontSize(px, save = true) {
+  verifyFontSize = Math.min(16, Math.max(10, px));
+  const pane = $('#verify-json-pane');
+  if (pane) pane.style.fontSize = verifyFontSize + 'px';
+  const pre = $('#verify-json');
+  if (pre) pre.style.fontSize = (verifyFontSize - 1) + 'px';
+  if (save) try { localStorage.setItem('documind:verify:fontSize', String(verifyFontSize)); } catch {}
 }
 
 function makeTableResizable(table) {
@@ -583,6 +582,12 @@ document.addEventListener('click', async (event) => {
   if (verifyPdfBtn) {
     state.verifyPdfMode = verifyPdfBtn.dataset.verifyPdf;
     showVerifyPdf();
+  }
+  const fontBtn = event.target.closest('[data-font]');
+  if (fontBtn) {
+    if (fontBtn.dataset.font === 'up') setVerifyFontSize(verifyFontSize + 1);
+    else if (fontBtn.dataset.font === 'down') setVerifyFontSize(verifyFontSize - 1);
+    else if (fontBtn.dataset.font === 'reset') setVerifyFontSize(13);
   }
   const verifyAction = event.target.closest('[data-action="verify-reload"]');
   if (verifyAction) await loadVerify();
