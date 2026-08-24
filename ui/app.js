@@ -303,6 +303,23 @@ async function loadVerify() {
   setStatus('Проверка загружена');
 }
 
+const TYPE_COLORS = {
+  upt_rights: '#dbeafe',   // blue
+  upt_costs: '#dcfce7',    // green
+  upt_act: '#fef9c3',      // yellow
+  upt_notify: '#fce7f3',   // pink
+  upt_add: '#e0e7ff',      // indigo
+  egrul_extract: '#ffedd5',
+  vehicle_registration_certificate: '#ccfbf1',
+  traffic_accident_participants: '#f3e8ff',
+  unknown: '#fee2e2',
+  not_processed: '#f1f5f9'
+};
+function typeColor(type, status) {
+  if (status === 'not_processed') return TYPE_COLORS.not_processed;
+  return TYPE_COLORS[type] || TYPE_COLORS.unknown;
+}
+
 function renderVerifyList() {
   const list = $('#verify-list');
   const prevScroll = list.scrollTop;
@@ -323,7 +340,8 @@ function renderVerifyList() {
     const badge = item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error';
     const type = item.docType || '—';
     const name = item.inputName || item.docId || 'unknown';
-    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}">
+    const bg = typeColor(item.docType, item.status);
+    return `<button class="${active}" data-verify-id="${escapeHtml(item.docId || '')}" data-verify-name="${escapeHtml(item.inputName || '')}" style="border-left:4px solid ${bg}; background:${isActive ? '' : bg}20">
       <div class="verify-item-title">${escapeHtml(name)}</div>
       <div class="small">${escapeHtml(type)} <span class="badge ${badge}">${escapeHtml(item.status)}</span> ${item.confidence ? '· ' + item.confidence : ''}</div>
     </button>`;
@@ -378,6 +396,18 @@ function initVerifyResizers() {
   const split = $('#verify-split');
   const gutterVert = $('#gutter-vert');
   const gutterHoriz = $('#gutter-horiz');
+  // restore from localStorage
+  try {
+    const savedVert = localStorage.getItem('documind:verify:layoutW');
+    if (savedVert && layout) layout.style.gridTemplateColumns = `${savedVert}px 10px 1fr`;
+    const savedPdf = localStorage.getItem('documind:verify:pdfW');
+    if (savedPdf && split) {
+      const containerW = split.getBoundingClientRect().width || 800;
+      const pdfW = Math.min(Math.max(300, Number(savedPdf)), containerW - 300);
+      const remain = containerW - pdfW - 10;
+      split.style.gridTemplateColumns = `${pdfW}px 10px ${remain}px`;
+    }
+  } catch {}
   if (!layout || !gutterVert) return;
   // left list resizer
   let startX, startLeftW;
@@ -390,6 +420,7 @@ function initVerifyResizers() {
     gutterVert.classList.remove('dragging');
     document.removeEventListener('mousemove', onVertMove);
     document.removeEventListener('mouseup', stopVert);
+    try { localStorage.setItem('documind:verify:layoutW', String($('#verify-list').getBoundingClientRect().width)); } catch {}
   }
   gutterVert.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -414,6 +445,7 @@ function initVerifyResizers() {
     gutterHoriz.classList.remove('dragging');
     document.removeEventListener('mousemove', onHorizMove);
     document.removeEventListener('mouseup', stopHoriz);
+    try { localStorage.setItem('documind:verify:pdfW', String($('#verify-pdf-pane').getBoundingClientRect().width)); } catch {}
   }
   gutterHoriz.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -423,12 +455,20 @@ function initVerifyResizers() {
     document.addEventListener('mousemove', onHorizMove);
     document.addEventListener('mouseup', stopHoriz);
   });
+  // table column resizer persistence
+  try {
+    const savedTable = JSON.parse(localStorage.getItem('documind:verify:tableW') || 'null');
+    if (savedTable && $('#verify-fields table')) {
+      const ths = document.querySelectorAll('.verify-table th');
+      ths.forEach((th, i) => { if (savedTable[i]) th.style.width = savedTable[i] + 'px'; });
+    }
+  } catch {}
 }
 
 function makeTableResizable(table) {
   if (!table) return;
   const ths = table.querySelectorAll('th');
-  ths.forEach((th) => {
+  ths.forEach((th, idx) => {
     const resizer = th.querySelector('.col-resizer');
     if (!resizer) return;
     let startX, startW;
@@ -440,6 +480,10 @@ function makeTableResizable(table) {
     function stop() {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', stop);
+      try {
+        const widths = Array.from(table.querySelectorAll('th')).map((h) => Math.round(h.getBoundingClientRect().width));
+        localStorage.setItem('documind:verify:tableW', JSON.stringify(widths));
+      } catch {}
     }
     resizer.addEventListener('mousedown', (e) => {
       e.preventDefault();
@@ -450,6 +494,13 @@ function makeTableResizable(table) {
       document.addEventListener('mouseup', stop);
     });
   });
+  // restore widths
+  try {
+    const saved = JSON.parse(localStorage.getItem('documind:verify:tableW') || 'null');
+    if (saved && saved.length === ths.length) {
+      ths.forEach((th, i) => { if (saved[i]) th.style.width = saved[i] + 'px'; });
+    }
+  } catch {}
 }
 
 function escapeHtml(value) {
