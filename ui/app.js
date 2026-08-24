@@ -9,7 +9,8 @@ const state = {
   selectedFieldMapping: null,
   verifyItems: [],
   selectedVerify: null,
-  verifyPdfMode: 'input'
+  verifyPdfMode: 'input',
+  verifyFilter: 'all'
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -277,19 +278,48 @@ async function openFile(filePath) {
   $('#file-preview').textContent = text;
 }
 
+function getFilteredVerifyItems() {
+  if (state.verifyFilter === 'all') return state.verifyItems;
+  return state.verifyItems.filter((item) => {
+    if (state.verifyFilter === 'not_processed') return item.status === 'not_processed';
+    if (state.verifyFilter === 'unknown') return item.docType === 'unknown';
+    return item.docType === state.verifyFilter;
+  });
+}
+
 async function loadVerify() {
   const result = await api('/api/verify/list');
   state.verifyItems = result.items;
-  $('#verify-count').textContent = `${result.items.length} документов`;
+  // populate filter counts (optional visual)
+  const counts = result.items.reduce((m, it) => { const k = it.status === 'not_processed' ? 'not_processed' : (it.docType || 'unknown'); m[k] = (m[k]||0)+1; return m; }, {});
+  // keep filter value
   renderVerifyList();
-  if (result.items.length && !state.selectedVerify) selectVerify(result.items[0].docId || result.items[0].inputName);
+  const filtered = getFilteredVerifyItems();
+  $('#verify-count').textContent = `${filtered.length}/${result.items.length} документов`;
+  // if selected is filtered out, pick first visible
+  const stillVisible = filtered.some((x) => x.docId === state.selectedVerify?.docId || x.inputName === state.selectedVerify?.inputName);
+  if (!stillVisible && filtered.length) selectVerify(filtered[0].docId || filtered[0].inputName);
+  else if (result.items.length && !state.selectedVerify) selectVerify(result.items[0].docId || result.items[0].inputName);
   setStatus('Проверка загружена');
 }
 
 function renderVerifyList() {
   const list = $('#verify-list');
-  list.innerHTML = state.verifyItems.map((item) => {
-    const active = (state.selectedVerify && (state.selectedVerify.docId === item.docId || state.selectedVerify.inputName === item.inputName)) ? 'active' : '';
+  const prevScroll = list.scrollTop;
+  const items = getFilteredVerifyItems();
+  // update count to reflect filter
+  const total = state.verifyItems.length;
+  if ($('#verify-count')) $('#verify-count').textContent = `${items.length}/${total} документов`;
+  list.innerHTML = items.map((item) => {
+    const isActive = (() => {
+      if (!state.selectedVerify) return false;
+      const sel = state.selectedVerify;
+      // docId is null for not_processed — compare only by inputName in that case
+      const bothHaveDocId = sel.docId && item.docId;
+      if (bothHaveDocId) return sel.docId === item.docId;
+      return sel.inputName && item.inputName && sel.inputName === item.inputName;
+    })();
+    const active = isActive ? 'active' : '';
     const badge = item.status === 'ok' ? 'ok' : item.status === 'not_processed' ? '' : 'error';
     const type = item.docType || '—';
     const name = item.inputName || item.docId || 'unknown';
@@ -298,12 +328,20 @@ function renderVerifyList() {
       <div class="small">${escapeHtml(type)} <span class="badge ${badge}">${escapeHtml(item.status)}</span> ${item.confidence ? '· ' + item.confidence : ''}</div>
     </button>`;
   }).join('');
+  list.scrollTop = prevScroll;
+  // keep active item visible
+  const activeBtn = list.querySelector('button.active');
+  if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
 }
 
 function selectVerify(idOrName) {
   const item = state.verifyItems.find((x) => x.docId === idOrName || x.inputName === idOrName);
   if (!item) return;
   state.selectedVerify = item;
+  // Удобная страница сразу: для обработанных — собранный PDF, для not_processed — исходник (убираем быстрое превью)
+  const hasOutput = !!(item.json?.pdfFileName || item.outputPdfPath);
+  if (item.status === 'not_processed' || !hasOutput) state.verifyPdfMode = 'input';
+  else state.verifyPdfMode = 'output';
   renderVerifyList();
   $('#verify-doc-title').textContent = `${item.inputName || ''} → ${item.docType || 'не обработан'}`;
   $('#verify-confidence').textContent = item.confidence ? `conf ${item.confidence}` : '';
@@ -328,8 +366,62 @@ function showVerifyPdf() {
     const outName = item.json?.pdfFileName || (item.outputPdfPath ? item.outputPdfPath.split(/[\\/]/).pop() : null);
     src = outName ? `/api/raw/output/${encodeURIComponent(outName)}` : `/api/raw/input/${encodeURIComponent(item.inputName)}`;
   }
+  // Удобная страница сразу: без боковой миниатюры, FitH
+  src += '#view=FitH&pagemode=none&navpanes=0';
   iframe.src = src;
   document.querySelectorAll('[data-verify-pdf]').forEach((b) => b.classList.toggle('active', b.dataset.verifyPdf === state.verifyPdfMode));
+}
+
+function initVerifyResizers() {
+  const layout = $('#verify-layout');
+  const split = $('#verify-split');
+  const gutterVert = $('#gutter-vert');
+  const gutterHoriz = $('#gutter-horiz');
+  if (!layout || !gutterVert) return;
+  // left list resizer
+  let startX, startLeftW;
+  function onVertMove(e) {
+    const dx = e.clientX - startX;
+    const newW = Math.min(Math.max(200, startLeftW + dx), 480);
+    layout.style.gridTemplateColumns = `${newW}px 6px 1fr`;
+  }
+  function stopVert() {
+    gutterVert.classList.remove('dragging');
+    document.removeEventListener('mousemove', onVertMove);
+    document.removeEventListener('mouseup', stopVert);
+  }
+  gutterVert.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startX = e.clientX;
+    const rect = $('#verify-list').getBoundingClientRect();
+    startLeftW = rect.width;
+    gutterVert.classList.add('dragging');
+    document.addEventListener('mousemove', onVertMove);
+    document.addEventListener('mouseup', stopVert);
+  });
+  // pdf/json resizer
+  if (!split || !gutterHoriz) return;
+  let startX2, startPdfW;
+  function onHorizMove(e) {
+    const dx = e.clientX - startX2;
+    const containerW = split.getBoundingClientRect().width;
+    const newPdfW = Math.min(Math.max(280, startPdfW + dx), containerW - 280);
+    const remain = containerW - newPdfW - 6;
+    split.style.gridTemplateColumns = `${newPdfW}px 6px ${remain}px`;
+  }
+  function stopHoriz() {
+    gutterHoriz.classList.remove('dragging');
+    document.removeEventListener('mousemove', onHorizMove);
+    document.removeEventListener('mouseup', stopHoriz);
+  }
+  gutterHoriz.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startX2 = e.clientX;
+    startPdfW = $('#verify-pdf-pane').getBoundingClientRect().width;
+    gutterHoriz.classList.add('dragging');
+    document.addEventListener('mousemove', onHorizMove);
+    document.addEventListener('mouseup', stopHoriz);
+  });
 }
 
 function escapeHtml(value) {
@@ -415,6 +507,15 @@ document.addEventListener('change', async (event) => {
     // BUG FIX: was dataset.field (undefined), now correctly dataset.pipelineField
     state.pipeline[index][event.target.dataset.pipelineField] = event.target.checked;
   }
+  if (event.target.matches('#verify-filter')) {
+    state.verifyFilter = event.target.value;
+    renderVerifyList();
+    const filtered = getFilteredVerifyItems();
+    if (filtered.length) {
+      const stillVisible = filtered.some((x) => x.docId === state.selectedVerify?.docId || x.inputName === state.selectedVerify?.inputName);
+      if (!stillVisible) selectVerify(filtered[0].docId || filtered[0].inputName);
+    }
+  }
 });
 
 async function init() {
@@ -425,6 +526,7 @@ async function init() {
     await loadDocTypes();
     await loadPrompts();
     try { await loadVerify(); } catch (e) { console.warn('verify load failed', e); }
+    initVerifyResizers();
     showTab('verify');
     setStatus('Ready');
   } catch (error) {

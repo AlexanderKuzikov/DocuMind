@@ -144,23 +144,43 @@
       <div class="toolbar">
         <button data-action="verify-reload">Обновить</button>
         <span id="verify-count" class="small"></span>
+        <label class="small">Фильтр:
+          <select id="verify-filter">
+            <option value="all">Все типы</option>
+            <option value="upt_rights">УПТ</option>
+            <option value="upt_costs">УПТЮ</option>
+            <option value="upt_act">Акты</option>
+            <option value="upt_notify">Уведомления</option>
+            <option value="upt_add">Доп. соглашения</option>
+            <option value="unknown">Unknown</option>
+            <option value="not_processed">Не обработано</option>
+          </select>
+        </label>
       </div>
-      <div class="verify-layout">
+      <div class="verify-layout" id="verify-layout">
         <aside class="verify-list" id="verify-list"></aside>
-        <div class="verify-main">
+        <div class="gutter gutter-vert" id="gutter-vert" title="Тяни для ширины списка"></div>
+        <div class="verify-main" id="verify-main">
           <div class="verify-pdf-bar">
             <button data-verify-pdf="input" class="active">Исходник</button>
             <button data-verify-pdf="output">Собранный PDF</button>
             <span id="verify-doc-title" class="small"></span>
           </div>
-          <iframe id="verify-pdf" class="verify-pdf"></iframe>
-          <div class="verify-json">
-            <div class="toolbar">
-              <span id="verify-json-title">JSON</span>
-              <span id="verify-confidence" class="badge"></span>
+          <div class="verify-split" id="verify-split">
+            <div class="verify-pdf-pane" id="verify-pdf-pane">
+              <iframe id="verify-pdf" class="verify-pdf"></iframe>
             </div>
-            <pre id="verify-json"></pre>
-            <div id="verify-fields" class="verify-fields"></div>
+            <div class="gutter gutter-horiz" id="gutter-horiz" title="Тяни для ширины PDF/JSON"></div>
+            <div class="verify-json-pane" id="verify-json-pane">
+              <div class="verify-json">
+                <div class="toolbar">
+                  <span id="verify-json-title">JSON</span>
+                  <span id="verify-confidence" class="badge"></span>
+                </div>
+                <pre id="verify-json"></pre>
+                <div id="verify-fields" class="verify-fields"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
