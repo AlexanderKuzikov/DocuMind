@@ -15,10 +15,10 @@ https://github.com/AlexanderKuzikov/DocuMind
 Текущий статус:
 
 ```text
-УПТ-блок 57 файлов протестирован / two-pass demo-ready / светлая тема
+УПТ-блок 57 файлов + person-фикс / 12 файлов live ok / светлая тема
 ```
 
-Прогон 24.08: 57 рандом `doc_*.pdf` (02 Цессия) — 57/57 `ok` (one-pass), ранее 29 two-pass 28 `ok` +1 `unknown` честно. `qwen/qwen3.6-35b-a3b` RouterAI `reasoning:none` 0 tokens, `accident_*`/`vehicle_number` доизвлечены.
+Прогон 24.08: 12 файлов live (3 акта + 4 УПТЮ + 3 УПТ + уведомление + unknown) — все `ok`, person-фикс `Гражданин РФ`/`РФ` → норма + дательный → именительный проверен ретраем `doc_025+027`; 57 рандом — 57/57 `ok` (one-pass) ранее. `qwen/qwen3.6-35b-a3b` RouterAI `reasoning:none` 0 tokens.
 
 ---
 
