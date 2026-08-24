@@ -387,6 +387,11 @@ function showVerifyPdf() {
   const item = state.selectedVerify;
   if (!item) return;
   const iframe = $('#verify-pdf');
+  // phantom without input — нечего показывать
+  if (!item.inputName) {
+    iframe.src = 'about:blank';
+    return;
+  }
   let src = '';
   if (state.verifyPdfMode === 'input') {
     src = `/api/raw/input/${encodeURIComponent(item.inputName)}`;

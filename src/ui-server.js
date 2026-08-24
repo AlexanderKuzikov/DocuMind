@@ -192,7 +192,7 @@ async function listVerifyDocuments(config) {
   const stagingDir = resolveConfigPath(config, config.paths.staging);
   const outputDir = resolveConfigPath(config, config.paths.output);
   const inputDir = resolveConfigPath(config, config.paths.input);
-  const items = [];
+  let items = [];
   // build output map once to avoid N+1
   const outputMap = new Map();
   try {
@@ -232,6 +232,8 @@ async function listVerifyDocuments(config) {
         debugJson = JSON.parse(await readTextFile(dbgPath));
       } catch {}
       const finalJson = outputJson || debugJson;
+      // пропуск пустых phantom-папок (без manifest и без output) — иначе в списке "— unknown" с input null
+      if (!manifest && !finalJson) continue;
       items.push({
         docId,
         inputFile: manifest?.source?.[0]?.path || manifest?.source?.path || null,
@@ -248,6 +250,20 @@ async function listVerifyDocuments(config) {
       });
     }
   } catch {}
+  // dedup staging duplicates (same inputName re-processed → different docId) — keep latest by docId
+  {
+    const byName = new Map();
+    for (const it of items) {
+      if (!it.inputName) continue;
+      const prev = byName.get(it.inputName);
+      if (!prev || (it.docId && prev.docId && it.docId > prev.docId) || !prev.docId) byName.set(it.inputName, it);
+    }
+    // keep only deduped staging, preserve items without inputName (should not happen after phantom filter)
+    const deduped = Array.from(byName.values());
+    // add any items without inputName that were not in map (phantom already filtered)
+    for (const it of items) if (!it.inputName && !deduped.includes(it)) deduped.push(it);
+    items = deduped;
+  }
   // also include input files without staging (not yet processed)
   try {
     const inEntries = await fs.readdir(inputDir, { withFileTypes: true });
@@ -458,7 +474,7 @@ async function handleApi(req, res, config) {
       else if (kind === 'staging') base = resolveConfigPath(freshConfig, freshConfig.paths.staging);
       else throw new Error('Unknown raw kind');
       const relative = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
-      if (!relative) throw new Error('Missing file path');
+      if (!relative || relative === 'null' || relative === 'undefined') throw new Error('Missing file path');
       const file = safeJoin(base, relative);
       try {
         const realBase = await fs.realpath(base).catch(() => base);
