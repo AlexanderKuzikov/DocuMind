@@ -383,8 +383,8 @@ function initVerifyResizers() {
   let startX, startLeftW;
   function onVertMove(e) {
     const dx = e.clientX - startX;
-    const newW = Math.min(Math.max(200, startLeftW + dx), 480);
-    layout.style.gridTemplateColumns = `${newW}px 6px 1fr`;
+    const newW = Math.min(Math.max(180, startLeftW + dx), 520);
+    layout.style.gridTemplateColumns = `${newW}px 10px 1fr`;
   }
   function stopVert() {
     gutterVert.classList.remove('dragging');
@@ -406,9 +406,9 @@ function initVerifyResizers() {
   function onHorizMove(e) {
     const dx = e.clientX - startX2;
     const containerW = split.getBoundingClientRect().width;
-    const newPdfW = Math.min(Math.max(280, startPdfW + dx), containerW - 280);
-    const remain = containerW - newPdfW - 6;
-    split.style.gridTemplateColumns = `${newPdfW}px 6px ${remain}px`;
+    const newPdfW = Math.min(Math.max(300, startPdfW + dx), containerW - 300);
+    const remain = containerW - newPdfW - 10;
+    split.style.gridTemplateColumns = `${newPdfW}px 10px ${remain}px`;
   }
   function stopHoriz() {
     gutterHoriz.classList.remove('dragging');
@@ -422,6 +422,33 @@ function initVerifyResizers() {
     gutterHoriz.classList.add('dragging');
     document.addEventListener('mousemove', onHorizMove);
     document.addEventListener('mouseup', stopHoriz);
+  });
+}
+
+function makeTableResizable(table) {
+  if (!table) return;
+  const ths = table.querySelectorAll('th');
+  ths.forEach((th) => {
+    const resizer = th.querySelector('.col-resizer');
+    if (!resizer) return;
+    let startX, startW;
+    function onMove(e) {
+      const dx = e.clientX - startX;
+      const newW = Math.max(80, startW + dx);
+      th.style.width = newW + 'px';
+    }
+    function stop() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', stop);
+    }
+    resizer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startX = e.clientX;
+      startW = th.getBoundingClientRect().width;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', stop);
+    });
   });
 }
 
