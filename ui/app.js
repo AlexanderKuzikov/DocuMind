@@ -350,8 +350,9 @@ function selectVerify(idOrName) {
   // fields table
   const fields = item.fields || {};
   $('#verify-fields').innerHTML = Object.entries(fields).length
-    ? `<table class="verify-table"><tr><th>поле</th><th>значение</th></tr>${Object.entries(fields).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(Array.isArray(v) ? v.join(', ') : String(v ?? '—'))}</td></tr>`).join('')}</table>`
+    ? `<table class="verify-table"><tr><th>поле <span class="col-resizer"></span></th><th>значение <span class="col-resizer"></span></th></tr>${Object.entries(fields).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(Array.isArray(v) ? v.join(', ') : String(v ?? '—'))}</td></tr>`).join('')}</table>`
     : '<div class="small">нет полей</div>';
+  makeTableResizable($('#verify-fields table'));
   showVerifyPdf();
 }
 
